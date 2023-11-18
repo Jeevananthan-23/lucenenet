@@ -111,6 +111,9 @@ namespace Lucene.Net.Store
             return new IndexInputSlicerAnonymousClass(context, file, descriptor);
         }
 
+        public override void RenameFile(string source, string dest) => throw new NotImplementedException();
+        public override IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context) => throw new NotImplementedException();
+
         private sealed class IndexInputSlicerAnonymousClass : IndexInputSlicer
         {
             private readonly IOContext context;

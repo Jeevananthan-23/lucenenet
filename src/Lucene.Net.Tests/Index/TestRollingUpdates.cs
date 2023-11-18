@@ -142,7 +142,7 @@ namespace Lucene.Net.Index
                         Console.WriteLine("TEST: reopen applyDeletions=" + applyDeletions);
                     }
 
-                    r = w.GetReader(applyDeletions);
+                    r = w.GetReader(applyDeletions, false);
                     if (applyDeletions)
                     {
                         s = NewSearcher(r);

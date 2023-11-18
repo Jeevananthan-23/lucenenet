@@ -582,7 +582,7 @@ namespace Lucene.Net.Search
                     iwc.SetInfoStream(new TextWriterInfoStream(Console.Out));
                 }
                 Writer = new IndexWriter(Dir, iwc);
-                Mgr = new SearcherManager(Writer, true, null);
+                Mgr = new SearcherManager(Writer, true,false, null);
                 Searchers = new SearcherLifetimeManager();
 
                 // Init w/ 0s... caller above will do initial

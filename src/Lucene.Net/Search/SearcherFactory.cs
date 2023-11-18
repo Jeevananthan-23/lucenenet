@@ -1,4 +1,4 @@
-namespace Lucene.Net.Search
+﻿namespace Lucene.Net.Search
 {
     /*
      * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,7 +47,7 @@ namespace Lucene.Net.Search
         /// <summary>
         /// Returns a new <see cref="IndexSearcher"/> over the given reader.
         /// </summary>
-        public virtual IndexSearcher NewSearcher(IndexReader reader)
+        public virtual IndexSearcher NewSearcher(IndexReader reader, IndexReader previousReader = null)
         {
             return new IndexSearcher(reader);
         }

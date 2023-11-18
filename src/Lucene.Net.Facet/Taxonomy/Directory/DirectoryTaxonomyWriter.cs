@@ -322,7 +322,7 @@ namespace Lucene.Net.Facet.Taxonomy.Directory
                     EnsureOpen();
                     if (!initializedReaderManager)
                     {
-                        readerManager = new ReaderManager(indexWriter, false);
+                        readerManager = new ReaderManager(indexWriter, false,false);
                         shouldRefreshReaderManager = false;
                         initializedReaderManager = true;
                     }

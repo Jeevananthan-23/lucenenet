@@ -1,4 +1,5 @@
 ﻿using Lucene.Net.Diagnostics;
+using Lucene.Net.Index;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
 using System;
@@ -130,6 +131,40 @@ namespace Lucene.Net.Codecs
                 throw new IOException("codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CODEC_MAGIC + " (resource: " + @in + ")");
             }
             return CheckHeaderNoMagic(@in, codec, minVersion, maxVersion);
+        }
+
+        /** Retrieves the full index header from the provided {@link IndexInput}.
+  *  This throws {@link CorruptIndexException} if this file does
+  * not appear to be an index file. */
+        public static byte[] ReadIndexHeader(IndexInput @in)
+        {
+            @in.Seek(0);
+            int actualHeader = @in.ReadInt32();
+            if (actualHeader != CODEC_MAGIC)
+            {
+                throw new CorruptIndexException("codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CODEC_MAGIC + @in);
+            }
+            string codec = @in.ReadString();
+            @in.ReadInt32();
+            @in.Seek(@in.GetFilePointer() + StringHelper.ID_LENGTH);
+            int suffixLength = @in.ReadByte() & 0xFF;
+            byte[] bytes = new byte[HeaderLength(codec) + StringHelper.ID_LENGTH + 1 + suffixLength];
+            @in.Seek(0);
+            @in.ReadBytes(bytes, 0, bytes.Length);
+            return bytes;
+        }
+
+        /** Retrieves the full footer from the provided {@link IndexInput}.  This throws
+         *  {@link CorruptIndexException} if this file does not have a valid footer. */
+        public static byte[] ReadFooter(IndexInput @in)
+        {
+            @in.Seek(@in.Length - FooterLength());
+            ValidateFooter(@in);
+            @in.Seek(@in.Length - FooterLength());
+            byte[]
+            bytes = new byte[FooterLength()];
+            @in.ReadBytes(bytes, 0, bytes.Length);
+            return bytes;
         }
 
         /// <summary>

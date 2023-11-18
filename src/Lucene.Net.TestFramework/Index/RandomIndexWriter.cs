@@ -416,7 +416,7 @@ namespace Lucene.Net.Index
                 {
                     IndexWriter.Commit();
                 }
-                return IndexWriter.GetReader(applyDeletions);
+                return IndexWriter.GetReader(applyDeletions,false);
             }
             else
             {
@@ -431,7 +431,7 @@ namespace Lucene.Net.Index
                 }
                 else
                 {
-                    return IndexWriter.GetReader(applyDeletions);
+                    return IndexWriter.GetReader(applyDeletions, false);
                 }
             }
         }

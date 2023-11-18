@@ -300,7 +300,7 @@ namespace Lucene.Net.Index
 
         internal virtual DirectoryReader GetReader()
         {
-            return GetReader(true);
+            return GetReader(true,false);
         }
 
         /// <summary>
@@ -360,9 +360,14 @@ namespace Lucene.Net.Index
         /// changes made so far by this <see cref="IndexWriter"/> instance
         /// </returns>
         /// <exception cref="IOException"> If there is a low-level I/O error </exception>
-        public virtual DirectoryReader GetReader(bool applyAllDeletes)
+        public virtual DirectoryReader GetReader(bool applyAllDeletes , bool writeAllDeletes)
         {
             EnsureOpen();
+
+            if (writeAllDeletes && applyAllDeletes == false)
+            {
+                throw new IllegalArgumentException("applyAllDeletes must be true when writeAllDeletes=true");
+            }
 
             long tStart = Time.NanoTime() / Time.MillisecondsPerNanosecond; // LUCENENET: Use NanoTime() rather than CurrentTimeMilliseconds() for more accurate/reliable results
 
@@ -418,7 +423,14 @@ namespace Lucene.Net.Index
                         try
                         {
                             MaybeApplyDeletes(applyAllDeletes);
-                            r = StandardDirectoryReader.Open(this, segmentInfos, applyAllDeletes);
+
+                            if (writeAllDeletes)
+                            {
+                                // Must move the deletes to disk:
+                                readerPool.Commit(segmentInfos);
+                            }
+
+                            r = StandardDirectoryReader.Open(this, segmentInfos, applyAllDeletes, writeAllDeletes);
                             if (infoStream.IsEnabled("IW"))
                             {
                                 infoStream.Message("IW", "return reader version=" + r.Version + " reader=" + r);
@@ -1538,6 +1550,26 @@ namespace Lucene.Net.Index
             }
         }
 
+
+        /** If {@link SegmentInfos#getVersion} is below {@code newVersion} then update it to this value. */
+        public void AdvanceSegmentInfosVersion(long newVersion)
+        {
+            UninterruptableMonitor.Enter(this);
+            try
+            {
+                EnsureOpen();
+                if (segmentInfos.Version < newVersion)
+                {
+                    segmentInfos.Version = (newVersion);
+                }
+                Changed();
+            }
+            finally
+            {
+                UninterruptableMonitor.Exit(this);
+            }
+        }
+
         ///<summary>
         /// Returns the last <a href="#sequence_numbers">sequence number</a>,
         /// or 0 if no index-changing operations have completed yet.
@@ -1549,6 +1581,27 @@ namespace Lucene.Net.Index
             {
                 EnsureOpen();
                 return docWriter.deleteQueue.LastSequenceNumber;
+            }
+        }
+
+        /** If {@link SegmentInfos#getVersion} is below {@code newVersion} then update it to this value.
+  *
+  * @lucene.internal */
+        public void advanceSegmentInfosVersion(long newVersion)
+        {
+            UninterruptableMonitor.Enter(this);
+            try
+            {
+                EnsureOpen();
+                if (segmentInfos.Version < newVersion)
+                {
+                    segmentInfos.Version = newVersion;
+                }
+                Changed();
+            }
+            finally
+            {
+                UninterruptableMonitor.Exit(this);
             }
         }
 
@@ -4151,10 +4204,17 @@ namespace Lucene.Net.Index
         /// </summary>
         public void SetCommitData(IDictionary<string, string> commitUserData)
         {
+            SetCommitData(commitUserData, true); 
+        }
+
+
+        public void SetCommitData(IDictionary<string, string> commitUserData, bool doIncrementVersion)
+        {
             UninterruptableMonitor.Enter(this);
             try
             {
                 segmentInfos.UserData = new Dictionary<string, string>(commitUserData);
+                if(doIncrementVersion) segmentInfos.Changed();
                 changeCount.IncrementAndGet();
             }
             finally
@@ -4666,7 +4726,7 @@ namespace Lucene.Net.Index
                 // Carefully merge deletes that occurred after we
                 // started merging:
                 int docUpto = 0;
-                long minGen = long.MaxValue;
+                long minGen = Int64.MaxValue;
 
                 // Lazy init (only when we find a delete to carry over):
                 MergedDeletesAndUpdates holder = new MergedDeletesAndUpdates();
@@ -6541,7 +6601,7 @@ namespace Lucene.Net.Index
             }
         }
 
-        internal virtual void IncRefDeleter(SegmentInfos segmentInfos)
+        public virtual void IncRefDeleter(SegmentInfos segmentInfos)
         {
             UninterruptableMonitor.Enter(this);
             try
@@ -6555,7 +6615,7 @@ namespace Lucene.Net.Index
             }
         }
 
-        internal virtual void DecRefDeleter(SegmentInfos segmentInfos)
+        public virtual void DecRefDeleter(SegmentInfos segmentInfos)
         {
             UninterruptableMonitor.Enter(this);
             try

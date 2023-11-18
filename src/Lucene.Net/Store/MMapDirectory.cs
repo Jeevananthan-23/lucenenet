@@ -346,5 +346,8 @@ namespace Lucene.Net.Store
 
             return buffers;
         }
+
+        public override void RenameFile(string source, string dest) => throw new NotImplementedException();
+        public override IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context) => throw new NotImplementedException();
     }
 }

@@ -80,7 +80,7 @@ namespace Lucene.Net.Index
 
             IndexWriter writer = GetWriter(directory);
 
-            ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, true, new SearcherFactory());
+            ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, true,false, new SearcherFactory());
 
             IndexSearcher searcher = mgr.Acquire();
 
@@ -127,7 +127,7 @@ namespace Lucene.Net.Index
 
             IndexWriter writer = GetWriter(directory);
 
-            ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, true, new SearcherFactory());
+            ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, true, false, new SearcherFactory());
 
             IndexSearcher searcher = mgr.Acquire();
 
@@ -166,7 +166,7 @@ namespace Lucene.Net.Index
 
             IndexWriter writer = GetWriter(directory);
 
-            ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, true, new SearcherFactory());
+            ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, true, false, new SearcherFactory());
 
             IndexSearcher searcher = mgr.Acquire();
 

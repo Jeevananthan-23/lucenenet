@@ -382,7 +382,7 @@ namespace Lucene.Net.Store
         /// Not implemented </summary>
         /// <exception cref="NotSupportedException"> always: not supported by CFS  </exception>
 #pragma warning disable IDE0060, CA1822 // Remove unused parameter, Mark members as static
-        public void RenameFile(string from, string to)
+        public override void  RenameFile(string from, string to)
 #pragma warning restore IDE0060, CA1822 // Remove unused parameter, Mark members as static
         {
             throw UnsupportedOperationException.Create();
@@ -472,5 +472,7 @@ namespace Lucene.Net.Store
         {
             return "CompoundFileDirectory(file=\"" + fileName + "\" in dir=" + directory + ")";
         }
+
+        public override IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context) => throw new NotImplementedException();
     }
 }

@@ -1,5 +1,6 @@
 ﻿using J2N.Collections.Generic.Extensions;
 using J2N.Threading.Atomic;
+using Lucene.Net.Support;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -184,7 +185,7 @@ namespace Lucene.Net.Store
                 existing.directory = null;
             }
             m_fileMap[name] = file;
-            return new RAMOutputStream(file);
+            return new RAMOutputStream(name,file);
         }
 
         /// <summary>
@@ -225,5 +226,19 @@ namespace Lucene.Net.Store
                 m_fileMap.Clear();
             }
         }
+
+        public override void RenameFile(string source, string dest)
+        {
+            EnsureOpen();
+            RAMFile file = m_fileMap[source];
+            if (file == null)
+            {
+                throw new FileNotFoundException(source);
+            }
+            m_fileMap.TryAdd(dest, file);
+            m_fileMap.TryRemove(source,out var value);
+        }
+
+        public override IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context) => throw new NotImplementedException();
     }
 }

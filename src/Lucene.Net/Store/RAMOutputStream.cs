@@ -45,11 +45,12 @@ namespace Lucene.Net.Store
         /// <summary>
         /// Construct an empty output buffer. </summary>
         public RAMOutputStream()
-            : this(new RAMFile())
+            : this("noname",new RAMFile())
         {
         }
 
-        public RAMOutputStream(RAMFile f)
+        public RAMOutputStream(string name, RAMFile f)
+            :base("RAMInputStream(name=" + name + ")",name)
         {
             file = f;
 

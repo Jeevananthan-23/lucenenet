@@ -103,14 +103,17 @@ namespace Lucene.Net.Index
         /// future.  Applying deletes can be costly, so if your app
         /// can tolerate deleted documents being returned you might
         /// gain some performance by passing <c>false</c>. </param>
+        /// <param name="writeAllDeletes"> If true, new deletes will be written
+        /// down to index files instead of carried over from writer to
+        /// reader in heap.</param>
         /// <returns> The new <see cref="IndexReader"/> </returns>
         /// <exception cref="CorruptIndexException"> if the index is corrupt </exception>
         /// <exception cref="IOException"> if there is a low-level IO error
         /// </exception>
         /// <seealso cref="OpenIfChanged(DirectoryReader, IndexWriter, bool)"/>
-        new public static DirectoryReader Open(IndexWriter writer, bool applyAllDeletes)
+        public static DirectoryReader Open(IndexWriter writer, bool applyAllDeletes, bool writeAllDeletes = false)
         {
-            return writer.GetReader(applyAllDeletes);
+            return writer.GetReader(applyAllDeletes, writeAllDeletes);
         }
 
         /// <summary>

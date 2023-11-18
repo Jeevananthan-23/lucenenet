@@ -2,6 +2,7 @@
 using Lucene.Net.Support.Threading;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Console = Lucene.Net.Util.SystemConsole;
 using JCG = J2N.Collections.Generic;
 
@@ -297,6 +298,20 @@ namespace Lucene.Net.Store
             @delegate.Sync(fileNames);
         }
 
+        public override void RenameFile(string source, string dest)
+        {
+            UnCache(source);
+            try
+            {
+                cache.DeleteFile(dest);
+            }
+            catch (IOException fnfe)
+            {
+                // OK -- it may not exist
+            }
+            @delegate.RenameFile(source, dest);
+        }
+
         public override IndexInput OpenInput(string name, IOContext context)
         {
             UninterruptableMonitor.Enter(this);
@@ -307,7 +322,7 @@ namespace Lucene.Net.Store
                 {
                     Console.WriteLine("nrtdir.openInput name=" + name);
                 }
-                
+
 #pragma warning disable 612, 618
                 if (cache.FileExists(name))
 #pragma warning restore 612, 618
@@ -459,5 +474,7 @@ namespace Lucene.Net.Store
                 UninterruptableMonitor.Exit(uncacheLock);
             }
         }
+
+        public override IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context) => throw new NotImplementedException();
     }
 }

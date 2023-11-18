@@ -1,4 +1,4 @@
-using Lucene.Net.Diagnostics;
+﻿using Lucene.Net.Diagnostics;
 using System;
 using System.IO;
 
@@ -84,14 +84,14 @@ namespace Lucene.Net.Search
         ///          custom behavior.
         /// </param>
         /// <exception cref="IOException"> if there is a low-level I/O error </exception>
-        public SearcherManager(IndexWriter writer, bool applyAllDeletes, SearcherFactory searcherFactory)
+        public SearcherManager(IndexWriter writer, bool applyAllDeletes, bool writeAllDeletes, SearcherFactory searcherFactory)
         {
             if (searcherFactory is null)
             {
                 searcherFactory = new SearcherFactory();
             }
             this.searcherFactory = searcherFactory;
-            Current = GetSearcher(searcherFactory, DirectoryReader.Open(writer, applyAllDeletes));
+            Current = GetSearcher(searcherFactory, DirectoryReader.Open(writer, applyAllDeletes, writeAllDeletes));
         }
 
         /// <summary>
@@ -167,13 +167,13 @@ namespace Lucene.Net.Search
         /// <see cref="SearcherFactory"/>.  NOTE: this decRefs incoming reader
         /// on throwing an exception.
         /// </summary>
-        public static IndexSearcher GetSearcher(SearcherFactory searcherFactory, IndexReader reader)
+        public static IndexSearcher GetSearcher(SearcherFactory searcherFactory, IndexReader reader, IndexReader previousReader = null)
         {
             bool success = false;
             IndexSearcher searcher;
             try
             {
-                searcher = searcherFactory.NewSearcher(reader);
+                searcher = searcherFactory.NewSearcher(reader , previousReader);
                 if (searcher.IndexReader != reader)
                 {
                     throw IllegalStateException.Create("SearcherFactory must wrap exactly the provided reader (got " + searcher.IndexReader + " but expected " + reader + ")");

@@ -1,7 +1,9 @@
+﻿using Lucene.Net.Store;
 using System;
 using System.IO;
 #if FEATURE_SERIALIZABLE_EXCEPTIONS
 using System.Runtime.Serialization;
+using System.Xml.Linq;
 #endif
 
 namespace Lucene.Net.Index
@@ -34,6 +36,9 @@ namespace Lucene.Net.Index
 #endif
     public class CorruptIndexException : IOException // LUCENENENET specific - made public instead of internal because there are public subclasses
     {
+
+        private readonly string message;
+        private readonly string resourceDescription;
         /// <summary>
         /// Constructor. </summary>
         public CorruptIndexException(string message)
@@ -46,6 +51,21 @@ namespace Lucene.Net.Index
         public CorruptIndexException(string message, Exception ex) 
             : base(message, ex)
         {
+        }
+
+        /** Create exception with message and root cause. */
+        public CorruptIndexException(string message, DataOutput output, Exception cause)
+             : base(message, cause)
+        {
+           
+        }
+
+        /** Create exception with message and root cause. */
+        public CorruptIndexException(string message, string resourceDescription, Exception cause)
+            : base((message) + " (resource=" + resourceDescription + ")", cause)
+        {
+            this.resourceDescription = resourceDescription;
+            this.message = message;
         }
 
 #if FEATURE_SERIALIZABLE_EXCEPTIONS

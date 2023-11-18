@@ -143,7 +143,7 @@ namespace Lucene.Net.Index
         {
             public Builder()
             {
-                output = new RAMOutputStream(buffer);
+                output = new RAMOutputStream("noname",buffer);
             }
 
             private readonly RAMFile buffer = new RAMFile(); // LUCENENET: marked readonly

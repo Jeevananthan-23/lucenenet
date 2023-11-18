@@ -41,6 +41,7 @@ namespace Lucene.Net.Store
         /// <summary>
         /// Construct an empty output buffer. </summary>
         public MockIndexOutputWrapper(MockDirectoryWrapper dir, IndexOutput @delegate, string name)
+            :base("MockIndexOPWrapper for test",name)
         {
             this.dir = dir;
             this.name = name;

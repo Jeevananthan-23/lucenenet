@@ -282,8 +282,8 @@ namespace Lucene.Net.Search
 
             SearcherFactory sf = new SearcherFactoryAnonymousClass(this, es);
 
-            nrtNoDeletes = new SearcherManager(m_writer, false, sf);
-            nrtDeletes = new SearcherManager(m_writer, true, sf);
+            nrtNoDeletes = new SearcherManager(m_writer, false,false, sf);
+            nrtDeletes = new SearcherManager(m_writer, true, false, sf);
 
             nrtDeletesThread = new ControlledRealTimeReopenThread<IndexSearcher>(genWriter, nrtDeletes, maxReopenSec, minReopenSec);
             nrtDeletesThread.Name = "NRTDeletes Reopen Thread";
@@ -310,8 +310,8 @@ namespace Lucene.Net.Search
                 this.es = es;
             }
 
-            public override IndexSearcher NewSearcher(IndexReader r)
-            {
+            public override IndexSearcher NewSearcher(IndexReader r, IndexReader previousReader = null)
+            { 
                 outerInstance.warmCalled = true;
                 IndexSearcher s = new IndexSearcher(r, es);
                 s.Search(new TermQuery(new Term("body", "united")), 10);
@@ -400,7 +400,7 @@ namespace Lucene.Net.Search
             CountdownEvent signal = new CountdownEvent(1);
 
             LatchedIndexWriter writer = new LatchedIndexWriter(d, conf, latch, signal);
-            SearcherManager manager = new SearcherManager(writer, false, null);
+            SearcherManager manager = new SearcherManager(writer, false, false,null);
 
             Document doc = new Document();
             doc.Add(NewTextField("test", "test", Field.Store.YES));
@@ -563,7 +563,7 @@ namespace Lucene.Net.Search
 
             try
             {
-                new SearcherManager(w.IndexWriter, false, theEvilOne);
+                new SearcherManager(w.IndexWriter, false, false, theEvilOne);
                 fail("didn't hit expected exception");
             }
             catch (Exception ise) when (ise.IsIllegalStateException())
@@ -587,7 +587,7 @@ namespace Lucene.Net.Search
                 this.other = other;
             }
 
-            public override IndexSearcher NewSearcher(IndexReader ignored)
+            public override IndexSearcher NewSearcher(IndexReader ignored, IndexReader previousReader = null) 
             {
                 return LuceneTestCase.NewSearcher(other);
             }
@@ -599,7 +599,7 @@ namespace Lucene.Net.Search
             Directory dir = NewDirectory();
             IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
             AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
-            SearcherManager sm = new SearcherManager(iw, true, new SearcherFactory());
+            SearcherManager sm = new SearcherManager(iw, true, false, new SearcherFactory());
             sm.AddListener(new RefreshListenerAnonymousClass(this, afterRefreshCalled));
             iw.AddDocument(new Document());
             iw.Commit();
@@ -664,7 +664,7 @@ namespace Lucene.Net.Search
             config.SetIndexDeletionPolicy(sdp);
             config.SetOpenMode(OpenMode.CREATE_OR_APPEND);
             IndexWriter iw = new IndexWriter(dir, config);
-            SearcherManager sm = new SearcherManager(iw, true, new SearcherFactory());
+            SearcherManager sm = new SearcherManager(iw, true, false, new SearcherFactory());
             ControlledRealTimeReopenThread<IndexSearcher> controlledRealTimeReopenThread = 
                 new ControlledRealTimeReopenThread<IndexSearcher>(iw, sm, maxStaleSecs, 0);
 
@@ -768,7 +768,7 @@ namespace Lucene.Net.Search
             doc.Add(new StringField("name", "Doc1", Field.Store.YES));
             indexWriter.AddDocument(doc);
 
-            SearcherManager searcherManager = new SearcherManager(indexWriter, applyAllDeletes: true, null);
+            SearcherManager searcherManager = new SearcherManager(indexWriter, applyAllDeletes: true, false, null);
 
             //Reopen SearcherManager every 1 secs via background thread if no thread waiting for newer generation.
             //Reopen SearcherManager after .2 secs if another thread IS waiting on a newer generation.  
@@ -927,7 +927,7 @@ namespace Lucene.Net.Search
             doc.Add(new StringField("name", "Doc3", Field.Store.YES));
             generation = indexWriter.AddDocument(doc);
 
-            SearcherManager searcherManager = new SearcherManager(indexWriter, applyAllDeletes: true, null);
+            SearcherManager searcherManager = new SearcherManager(indexWriter, applyAllDeletes: true, false, null);
 
             //Reopen SearcherManager every 2 secs via background thread if no thread waiting for newer generation.
             //Reopen SearcherManager after .2 secs if another thread IS waiting on a newer generation.  

@@ -51,6 +51,9 @@ namespace Lucene.Net.Util
         [Obsolete("Use GoodFastHashSeed instead. This field will be removed in 4.8.0 release candidate.")]
         public static int GOOD_FAST_HASH_SEED => goodFastHashSeed;
 
+        /** length in bytes of an ID */
+        public const int ID_LENGTH = 16;
+
         /// <summary>
         /// Compares two <see cref="BytesRef"/>, element by element, and returns the
         /// number of elements common to both arrays.

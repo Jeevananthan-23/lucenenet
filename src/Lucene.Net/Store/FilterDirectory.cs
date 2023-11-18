@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Lucene.Net.Store
@@ -78,6 +78,11 @@ namespace Lucene.Net.Store
             m_input.Sync(names);
         }
 
+        public override void RenameFile(string source, string dest)
+        {
+            m_input.RenameFile(source, dest);
+        }
+
         public override IndexInput OpenInput(string name, IOContext context)
         {
             return m_input.OpenInput(name, context);
@@ -117,5 +122,7 @@ namespace Lucene.Net.Store
         {
             return this.GetType().Name + "(" + m_input.ToString() + ")";
         }
+
+        public override IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context) => throw new NotImplementedException();
     }
 }

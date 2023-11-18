@@ -61,6 +61,7 @@ namespace Lucene.Net.Util
         }
 
         public ThrottledIndexOutput(int bytesPerSecond, long flushDelayMillis, long closeDelayMillis, long seekDelayMillis, long minBytesWritten, IndexOutput @delegate)
+            :base(null,null)
         {
             if (Debugging.AssertsEnabled) Debugging.Assert(bytesPerSecond > 0);
             this.@delegate = @delegate;

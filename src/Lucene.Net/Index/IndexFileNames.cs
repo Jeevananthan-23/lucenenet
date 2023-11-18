@@ -54,6 +54,10 @@ namespace Lucene.Net.Index
         public static readonly string SEGMENTS = "segments";
 
         /// <summary>
+        /// Name of pending index segment file </summary>
+        public static readonly string PENDING_SEGMENTS = "pending_segments";
+
+        /// <summary>
         /// Extension of gen file </summary>
         public static readonly string GEN_EXTENSION = "gen";
 

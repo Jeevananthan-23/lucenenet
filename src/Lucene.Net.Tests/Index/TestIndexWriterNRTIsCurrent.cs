@@ -111,7 +111,7 @@ namespace Lucene.Net.Index
                     Document doc = new Document();
                     doc.Add(new TextField("id", "1", Field.Store.NO));
                     writer.AddDocument(doc);
-                    holder.reader = currentReader = writer.GetReader(true);
+                    holder.reader = currentReader = writer.GetReader(true, false);
                     Term term = new Term("id");
                     for (int i = 0; i < numOps && !holder.stop; i++)
                     {

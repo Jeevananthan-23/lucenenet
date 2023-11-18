@@ -83,6 +83,15 @@ namespace Lucene.Net.Store
         public abstract IndexOutput CreateOutput(string name, IOContext context);
 
         /// <summary>
+        /// Creates a new, empty file for writing in the directory, with a
+        /// temporary file name including prefix and suffix, ending with the
+        /// reserved extension <code>.tmp</code>.  Use
+        /// {@link IndexOutput#getName} to see what name was used.
+        /// 
+        /// </summary>
+        public abstract IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context);
+
+        /// <summary>
         /// Ensure that any writes to these files are moved to
         /// stable storage.  Lucene uses this to properly commit
         /// changes to the index, to prevent a machine/OS crash
@@ -94,6 +103,18 @@ namespace Lucene.Net.Store
         /// reasons.
         /// </summary>
         public abstract void Sync(ICollection<string> names);
+
+        ///<summary>
+        /// Renames {@code source} to {@code dest} as an atomic operation,
+        /// where {@code dest} does not yet exist in the directory.<br/>
+        /// <br/>
+        /// NOTE: This method is used by IndexWriter to publish commits.
+        /// It is ok if this operation is not truly atomic, for example
+        /// both {@code source} and {@code dest} can be visible temporarily.
+        /// It is just important that the contents of {@code dest} appear
+        /// atomically, or an exception is thrown.
+        /// </summary> 
+        public abstract void RenameFile(string source, string dest);
 
         /// <summary>
         /// Returns a stream reading an existing file, with the

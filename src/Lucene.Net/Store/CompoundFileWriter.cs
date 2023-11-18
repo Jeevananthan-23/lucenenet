@@ -358,7 +358,7 @@ namespace Lucene.Net.Store
             private readonly bool isSeparate;
 
             internal DirectCFSIndexOutput(CompoundFileWriter outerInstance, IndexOutput @delegate, FileEntry entry, bool isSeparate)
-                : base()
+                : base("noresourcename","noname")
             {
                 this.outerInstance = outerInstance;
                 this.@delegate = @delegate;

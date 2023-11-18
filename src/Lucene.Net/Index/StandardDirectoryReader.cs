@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using JCG = J2N.Collections.Generic;
 
 namespace Lucene.Net.Index
@@ -29,22 +30,25 @@ namespace Lucene.Net.Index
     using IOContext = Lucene.Net.Store.IOContext;
     using IOUtils = Lucene.Net.Util.IOUtils;
 
-    internal sealed class StandardDirectoryReader : DirectoryReader
+    public sealed class StandardDirectoryReader : DirectoryReader
     {
         private readonly IndexWriter writer;
-        private readonly SegmentInfos segmentInfos;
         private readonly int termInfosIndexDivisor;
         private readonly bool applyAllDeletes;
+        private readonly bool writeAllDeletes;
+
+        public SegmentInfos SegmentInfos { get; private set; }
 
         /// <summary>
         /// called only from static <c>Open()</c> methods </summary>
-        internal StandardDirectoryReader(Directory directory, AtomicReader[] readers, IndexWriter writer, SegmentInfos sis, int termInfosIndexDivisor, bool applyAllDeletes)
+        public StandardDirectoryReader(Directory directory, AtomicReader[] readers, IndexWriter writer, SegmentInfos sis, int termInfosIndexDivisor, bool applyAllDeletes, bool writeAllDeletes)
             : base(directory, readers)
         {
             this.writer = writer;
-            this.segmentInfos = sis;
+            this.SegmentInfos = sis;
             this.termInfosIndexDivisor = termInfosIndexDivisor;
             this.applyAllDeletes = applyAllDeletes;
+            this.writeAllDeletes = writeAllDeletes;
         }
 
         /// <summary>
@@ -87,13 +91,13 @@ namespace Lucene.Net.Index
                         }
                     }
                 }
-                return new StandardDirectoryReader(directory, readers, null, sis, termInfosIndexDivisor, false);
+                return new StandardDirectoryReader(directory, readers, null, sis, termInfosIndexDivisor, false,false);
             }
         }
 
         /// <summary>
         /// Used by near real-time search </summary>
-        internal static DirectoryReader Open(IndexWriter writer, SegmentInfos infos, bool applyAllDeletes)
+        internal static DirectoryReader Open(IndexWriter writer, SegmentInfos infos, bool applyAllDeletes, bool writeAllDeletes)
         {
             // IndexWriter synchronizes externally before calling
             // us, which ensures infos will not change; so there's
@@ -140,7 +144,7 @@ namespace Lucene.Net.Index
 
                 writer.IncRefDeleter(segmentInfos);
 
-                StandardDirectoryReader result = new StandardDirectoryReader(dir, readers.ToArray(), writer, segmentInfos, writer.Config.ReaderTermsIndexDivisor, applyAllDeletes);
+                StandardDirectoryReader result = new StandardDirectoryReader(dir, readers.ToArray(), writer, segmentInfos, writer.Config.ReaderTermsIndexDivisor, applyAllDeletes, writeAllDeletes);
                 success = true;
                 return result;
             }
@@ -166,7 +170,7 @@ namespace Lucene.Net.Index
 
         /// <summary>
         /// This constructor is only used for <see cref="DoOpenIfChanged(SegmentInfos)"/> </summary>
-        private static DirectoryReader Open(Directory directory, SegmentInfos infos, IList<IndexReader> oldReaders, int termInfosIndexDivisor) // LUCENENET: Changed from AtomicReader to IndexReader to eliminate casting from the 1 place this is called from
+        public static DirectoryReader Open(Directory directory, SegmentInfos infos, IList<IndexReader> oldReaders, int termInfosIndexDivisor) // LUCENENET: Changed from AtomicReader to IndexReader to eliminate casting from the 1 place this is called from
         {
             // we put the old SegmentReaders in a map, that allows us
             // to lookup a reader using its segment name
@@ -289,7 +293,7 @@ namespace Lucene.Net.Index
                     IOUtils.ReThrow(prior);
                 }
             }
-            return new StandardDirectoryReader(directory, newReaders, null, infos, termInfosIndexDivisor, false);
+            return new StandardDirectoryReader(directory, newReaders, null, infos, termInfosIndexDivisor, false, false);
         }
 
         public override string ToString()
@@ -297,10 +301,10 @@ namespace Lucene.Net.Index
             StringBuilder buffer = new StringBuilder();
             buffer.Append(this.GetType().Name);
             buffer.Append('(');
-            string segmentsFile = segmentInfos.GetSegmentsFileName();
+            string segmentsFile = SegmentInfos.GetSegmentsFileName();
             if (segmentsFile != null)
             {
-                buffer.Append(segmentsFile).Append(':').Append(segmentInfos.Version);
+                buffer.Append(segmentsFile).Append(':').Append(SegmentInfos.Version);
             }
             if (writer != null)
             {
@@ -345,7 +349,7 @@ namespace Lucene.Net.Index
             }
             else
             {
-                return writer.GetReader(applyAllDeletes);
+                return writer.GetReader(applyAllDeletes, writeAllDeletes);
             }
         }
 
@@ -356,15 +360,15 @@ namespace Lucene.Net.Index
                 return DoOpenFromCommit(commit);
             }
 
-            if (writer.NrtIsCurrent(segmentInfos))
+            if (writer.NrtIsCurrent(SegmentInfos))
             {
                 return null;
             }
 
-            DirectoryReader reader = writer.GetReader(applyAllDeletes);
+            DirectoryReader reader = writer.GetReader(applyAllDeletes,writeAllDeletes);
 
             // If in fact no changes took place, return null:
-            if (reader.Version == segmentInfos.Version)
+            if (reader.Version == SegmentInfos.Version)
             {
                 reader.DecRef();
                 return null;
@@ -388,7 +392,7 @@ namespace Lucene.Net.Index
                 {
                     throw new IOException("the specified commit does not match the specified Directory");
                 }
-                if (segmentInfos != null && commit.SegmentsFileName.Equals(segmentInfos.GetSegmentsFileName(), StringComparison.Ordinal))
+                if (SegmentInfos != null && commit.SegmentsFileName.Equals(SegmentInfos.GetSegmentsFileName(), StringComparison.Ordinal))
                 {
                     return null;
                 }
@@ -430,7 +434,7 @@ namespace Lucene.Net.Index
             get
             {
                 EnsureOpen();
-                return segmentInfos.Version;
+                return SegmentInfos.Version;
             }
         }
 
@@ -448,11 +452,11 @@ namespace Lucene.Net.Index
                 sis.Read(m_directory);
 
                 // we loaded SegmentInfos from the directory
-                return sis.Version == segmentInfos.Version;
+                return sis.Version == SegmentInfos.Version;
             }
             else
             {
-                return writer.NrtIsCurrent(segmentInfos);
+                return writer.NrtIsCurrent(SegmentInfos);
             }
         }
 
@@ -479,7 +483,7 @@ namespace Lucene.Net.Index
             {
                 try
                 {
-                    writer.DecRefDeleter(segmentInfos);
+                    writer.DecRefDeleter(SegmentInfos);
                 }
                 catch (Exception ex) when (ex.IsAlreadyClosedException())
                 {
@@ -500,7 +504,7 @@ namespace Lucene.Net.Index
             get
             {
                 EnsureOpen();
-                return new ReaderCommit(segmentInfos, m_directory);
+                return new ReaderCommit(SegmentInfos, m_directory);
             }
         }
 

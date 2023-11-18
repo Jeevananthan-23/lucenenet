@@ -1,5 +1,4 @@
 ﻿using J2N;
-using J2N.Collections.Generic.Extensions;
 using Lucene.Net.Diagnostics;
 using Lucene.Net.Support;
 using Lucene.Net.Support.IO;
@@ -490,6 +489,293 @@ namespace Lucene.Net.Index
             return IndexFileNames.FileNameFromGeneration(IndexFileNames.SEGMENTS, "", nextGeneration);
         }
 
+        ///<summary>
+        /// Read a particular segmentFileName.  Note that this may
+        /// throw an IOException if a commit is in process.
+        ///
+        /// @param directory -- directory containing the segments file
+        /// @param segmentFileName -- segment file to load
+        /// @throws CorruptIndexException if the index is corrupt
+        /// @ if there is a low-level IO error</summary>
+        public static SegmentInfos ReadCommit(Directory directory, string segmentFileName)
+        {
+            long generation = GenerationFromSegmentsFileName(segmentFileName);
+            //System.out.println(Thread.currentThread() + ": SegmentInfos.readCommit " + segmentFileName);
+            using ChecksumIndexInput input = directory.OpenChecksumInput(segmentFileName, IOContext.READ);
+            return ReadCommit(directory, input, generation);
+        }
+
+        /** Read the commit from the provided {@link ChecksumIndexInput}. */
+        public static SegmentInfos ReadCommit(Directory directory, ChecksumIndexInput input, long generation)
+        {
+
+            SegmentInfos infos = new SegmentInfos();
+            infos.generation = generation;
+            infos.lastGeneration = generation;
+
+            var success = false;
+
+            // Clear any previous segments:
+            infos.Clear();
+
+            try
+            {
+                int format = input.ReadInt32();
+                int actualFormat;
+                if (format == CodecUtil.CODEC_MAGIC)
+                {
+                    // 4.0+
+                    actualFormat = CodecUtil.CheckHeaderNoMagic(input, "segments", VERSION_40, VERSION_48);
+                    infos.Version = input.ReadInt64();
+                    infos.Counter = input.ReadInt32();
+                    int numSegments = input.ReadInt32();
+                    if (numSegments < 0)
+                    {
+                        throw new CorruptIndexException("invalid segment count: " + numSegments + " (resource: " + input + ")");
+                    }
+                    for (var seg = 0; seg < numSegments; seg++)
+                    {
+                        var segName = input.ReadString();
+                        var codec = Codec.ForName(input.ReadString());
+                        //System.out.println("SIS.read seg=" + seg + " codec=" + codec);
+                        var info = codec.SegmentInfoFormat.SegmentInfoReader.Read(directory, segName, IOContext.READ);
+                        info.Codec = codec;
+                        long delGen = input.ReadInt64();
+                        int delCount = input.ReadInt32();
+                        if (delCount < 0 || delCount > info.DocCount)
+                        {
+                            throw new CorruptIndexException("invalid deletion count: " + delCount + " vs docCount=" + info.DocCount + " (resource: " + input + ")");
+                        }
+                        long fieldInfosGen = -1;
+                        if (actualFormat >= VERSION_46)
+                        {
+                            fieldInfosGen = input.ReadInt64();
+                        }
+                        var siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen);
+                        if (actualFormat >= VERSION_46)
+                        {
+                            int numGensUpdatesFiles = input.ReadInt32();
+                            IDictionary<long, ISet<string>> genUpdatesFiles;
+                            if (numGensUpdatesFiles == 0)
+                            {
+                                genUpdatesFiles = Collections.EmptyMap<long, ISet<string>>();
+                            }
+                            else
+                            {
+                                genUpdatesFiles = new Dictionary<long, ISet<string>>(numGensUpdatesFiles);
+                                for (int i = 0; i < numGensUpdatesFiles; i++)
+                                {
+                                    genUpdatesFiles[input.ReadInt64()] = input.ReadStringSet();
+                                }
+                            }
+                            siPerCommit.SetGenUpdatesFiles(genUpdatesFiles);
+                        }
+                        infos.Add(siPerCommit);
+                    }
+                    infos.userData = input.ReadStringStringMap();
+                }
+                else
+                {
+                    actualFormat = -1;
+                    Lucene3xSegmentInfoReader.ReadLegacyInfos(infos, directory, input, format);
+                    Codec codec = Codec.ForName("Lucene3x");
+                    foreach (SegmentCommitInfo info in infos.segments)
+                    {
+                        info.Info.Codec = codec;
+                    }
+                }
+
+                if (actualFormat >= VERSION_48)
+                {
+                    CodecUtil.CheckFooter(input);
+                }
+                else
+                {
+                    long checksumNow = input.Checksum;
+                    long checksumThen = input.ReadInt64();
+                    if (checksumNow != checksumThen)
+                    {
+                        throw new CorruptIndexException("checksum mismatch in segments file (resource: " + input + ")");
+                    }
+#pragma warning disable 612, 618
+                    CodecUtil.CheckEOF(input);
+#pragma warning restore 612, 618
+                }
+
+                success = true;
+            }
+            finally
+            {
+                if (!success)
+                {
+                    // Clear any segment infos we had loaded so we
+                    // have a clean slate on retry:
+                    infos.Clear();
+                    IOUtils.DisposeWhileHandlingException(input);
+                }
+                else
+                {
+                    input.Dispose();
+                }
+            }
+
+            /*// NOTE: as long as we want to throw indexformattooold (vs corruptindexexception), we need
+            // to read the magic ourselves.
+            int magic = input.ReadInt32();
+            if (magic != CodecUtil.CODEC_MAGIC)
+            {
+                throw new IndexFormatTooOldException(input, magic, CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
+            }
+            int format = CodecUtil.CheckHeaderNoMagic(input, "segments", VERSION_48, LUCENE_CURRENT);
+            byte[] id = new byte[StringHelper.ID_LENGTH];
+            input.ReadBytes(id, 0, id.Length);
+            CodecUtil.CheckIndexHeaderSuffix(input, Long.ToString(generation, Character.MaxRadix));
+
+            SegmentInfos infos = new SegmentInfos();
+            infos.Info( id);
+            infos.generation = generation;
+            infos.lastGeneration = generation;
+            if (format >= VERSION_48)
+            {
+                // TODO: in the future (7.0?  sigh) we can use this to throw IndexFormatTooOldException ... or just rely on the
+                // minSegmentLuceneVersion check instead:
+                infos.luceneVersion = Version.FromBits(input.ReadVInt32(), input.ReadVInt32(), input.ReadVInt32());
+            }
+            else
+            {
+                // else compute the min version down below in the for loop
+            }
+
+            infos.Version = input.ReadInt64();
+            //System.out.println("READ sis version=" + infos.version);
+            infos.Counter = input.ReadInt32();
+            int numSegments = input.ReadInt32();
+            if (numSegments < 0)
+            {
+                throw new CorruptIndexException("invalid segment count: " + numSegments, input);
+            }
+
+            if (format >= VERSION_48)
+            {
+                if (numSegments > 0)
+                {
+                    infos.MinSegmentLuceneVersion = Version.FromBits(input.ReadVInt32(), input.ReadVInt32(), input.ReadVInt32());
+                    if (infos.minSegmentLuceneVersion.onOrAfter(Version.LUCENE_5_0_0) == false)
+                    {
+                        throw new IndexFormatTooOldException(input, "this index contains a too-old segment (version: " + infos.minSegmentLuceneVersion + ")");
+                    }
+                }
+                else
+                {
+                    // else leave as null: no segments
+                }
+            }
+            else
+            {
+                // else we recompute it below as we visit segments; it can't be used for throwing IndexFormatTooOldExc, but consumers of
+                // SegmentInfos can maybe still use it for other reasons
+            }
+
+            long totalDocs = 0;
+            for (int seg = 0; seg < numSegments; seg++)
+            {
+                string segName = input.ReadString();
+                byte[] segmentID;
+                byte hasID = input.ReadByte();
+                if (hasID == 1)
+                {
+                    segmentID = new byte[StringHelper.ID_LENGTH];
+                    input.ReadBytes(segmentID, 0, segmentID.Length);
+                }
+                else if (hasID == 0)
+                {
+                    throw new IndexFormatTooOldException(input, "Segment is from Lucene 4.x");
+                }
+                else
+                {
+                    throw new CorruptIndexException("invalid hasID byte, got: " + hasID, input);
+                }
+                Codec codec = ReadCodec(input, format < VERSION_48);
+                SegmentInfo info = codec.SegmentInfoFormat.SegmentInfoReader.Read(directory, segName, segmentID, IOContext.READ);
+                info.Codec = codec;
+                totalDocs += info.DocCount; //MaxDoc
+                long delGen = input.ReadInt64();
+                int delCount = input.ReadInt32();
+                if (delCount < 0 || delCount > info.DocCount) //MaxDoc
+                {
+                    throw new CorruptIndexException("invalid deletion count: " + delCount + " vs maxDoc=" + info.DocCount, input);
+                }
+                long fieldInfosGen = input.ReadInt64();
+                long dvGen = input.ReadInt64();
+                SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, dvGen);
+                if (format >= VERSION_48)
+                {
+                    siPerCommit.UpdatesFiles = input.ReadSetOfStrings;
+                }
+                else
+                {
+                    siPerCommit.SetUpdateFiles(Collections.unmodifiableSet(input.readStringSet()));
+                }
+                ReadOnlyDictionary<int, ISet<string>> dvUpdateFiles;
+                int numDVFields = input.ReadInt32();
+                if (numDVFields == 0)
+                {
+                    dvUpdateFiles = Collections.EmptyMap<int, ISet<string>>();
+                }
+                else
+                {
+                    Dictionary<int, ISet<string>> map = new Dictionary<int, ISet<string>>(numDVFields);
+                    for (int i = 0; i < numDVFields; i++)
+                    {
+                        if (format >= VERSION_48)
+                        {
+                            map.Put(input.ReadInt32(), input.ReadStringSet());
+                        }
+                        else
+                        {
+                            map.Put(input.ReadInt32(), new ReadOnlySet<string>(input.ReadStringSet()));
+                        }
+                    }
+                    dvUpdateFiles = new ReadOnlyDictionary<int, ISet<string>>(map);
+                }
+                siPerCommit.SetGenUpdatesFiles(dvUpdateFiles.ToDictionary());
+                infos.Add(siPerCommit);
+
+                Version segmentVersion = info.Version;
+                if (format < VERSION_48)
+                {
+                    if (infos.minSegmentLuceneVersion == null || segmentVersion.onOrAfter(infos.minSegmentLuceneVersion) == false)
+                    {
+                        infos.minSegmentLuceneVersion = segmentVersion;
+                    }
+                }
+                else if (segmentVersion.onOrAfter(infos.minSegmentLuceneVersion) == false)
+                {
+                    throw new CorruptIndexException("segments file recorded minSegmentLuceneVersion=" + infos.minSegmentLuceneVersion + " but segment=" + info + " has older version=" + segmentVersion, input);
+                }
+            }
+
+            if (format >= VERSION_48)
+            {
+                infos.userData = input.ReadStringStringMap();
+            }
+            else
+            {
+                infos.userData = Collections.unmodifiableMap(input.readStringStringMap());
+            }
+
+            CodecUtil.CheckFooter(input);
+
+            // LUCENE-6299: check we are in bounds
+            if (totalDocs > IndexWriter.ActualMaxDocs)
+            {
+                throw new CorruptIndexException("Too many documents: an index cannot exceed " + IndexWriter.getActualMaxDocs() + " but readers have total maxDoc=" + totalDocs, input);
+            }*/
+
+            return infos;
+        }
+
+
         /// <summary>
         /// Read a particular <paramref name="segmentFileName"/>.  Note that this may
         /// throw an <see cref="IOException"/> if a commit is in process.
@@ -649,7 +935,7 @@ namespace Lucene.Net.Index
         private const string SEGMENT_INFO_UPGRADE_CODEC = "SegmentInfo3xUpgrade";
         private const int SEGMENT_INFO_UPGRADE_VERSION = 0;
 
-        private void Write(Directory directory)
+        public void Write(Directory directory)
         {
             string segmentsFileName = GetNextSegmentFileName();
 
@@ -770,6 +1056,83 @@ namespace Lucene.Net.Index
             }
         }
 
+        /*public void Write(Directory directory, IndexOutput @out)
+        {
+            CodecUtil.WriteIndexHeader(@out, "segments", VERSION_48,
+                               StringHelper.RandomId(), Long.ToString(generation, Character.MaxRadix));
+            @out.WriteVInt(Version.LATEST.major);
+            @out.writeVInt(Version.LATEST.minor);
+            @out.writeVInt(Version.LATEST.bugfix);
+            //System.@out.println(Thread.currentThread().getName() + ": now write " + @ou.getName() + " with version=" + version);
+
+            @out.writeLong(version);
+            @out.writeInt(counter); // write counter
+            @out.writeInt(size());
+
+            if (size() > 0)
+            {
+
+                Version minSegmentVersion = null;
+
+                // We do a separate loop up front so we can write the minSegmentVersion before
+                // any SegmentInfo; this makes it cleaner to throw IndexFormatTooOldExc at read time:
+                foreach (SegmentCommitInfo siPerCommit in this)
+                {
+                    Version segmentVersion = siPerCommit.Info.Version;
+                    if (minSegmentVersion == null || segmentVersion.OnOrAfter(minSegmentVersion) == false)
+                    {
+                        minSegmentVersion = segmentVersion;
+                    }
+                }
+
+                @out.WriteVInt(minSegmentVersion.Major);
+                @out.WriteVInt(minSegmentVersion.Minor);
+                @out.WriteVInt(minSegmentVersion.Build);
+            }
+
+            // write infos
+            foreach(SegmentCommitInfo siPerCommit in this)
+            {
+                SegmentInfo si = siPerCommit.info;
+                @out.writeString(si.name);
+                byte segmentID[] = si.getId();
+                // TODO: remove this in lucene 6, we don't need to include 4.x segments in commits anymore
+                if (segmentID == null)
+                {
+                    @out.writeByte((byte)0);
+                }
+                else
+                {
+                    if (segmentID.length != StringHelper.ID_LENGTH)
+                    {
+                        throw new IllegalStateException("cannot write segment: invalid id segment=" + si.name + "id=" + StringHelper.idToString(segmentID));
+                    }
+                    @out.writeByte((byte)1);
+                    @out.writeBytes(segmentID, segmentID.length);
+                }
+                @out.writeString(si.getCodec().getName());
+                @out.writeLong(siPerCommit.getDelGen());
+                int delCount = siPerCommit.getDelCount();
+                if (delCount < 0 || delCount > si.maxDoc())
+                {
+                    throw new IllegalStateException("cannot write segment: invalid maxDoc segment=" + si.name + " maxDoc=" + si.maxDoc() + " delCount=" + delCount);
+                }
+                @out.writeInt(delCount);
+                @out.writeLong(siPerCommit.getFieldInfosGen());
+                @out.writeLong(siPerCommit.getDocValuesGen());
+                @out.writeSetOfStrings(siPerCommit.getFieldInfosFiles());
+                 Map<Integer, Set< String >> dvUpdatesFiles = siPerCommit.getDocValuesUpdatesFiles();
+                @out.writeInt(dvUpdatesFiles.size());
+                for (Entry<Integer, Set<String>> e : dvUpdatesFiles.entrySet())
+                {
+                    @out.writeInt(e.getKey());
+                    @out.writeSetOfStrings(e.getValue());
+                }
+            }
+            @out.writeMapOfStrings(userData);
+            CodecUtil.writeFooter(@out);
+        }*/
+
         private static bool SegmentWasUpgraded(Directory directory, SegmentInfo si)
         {
             // Check marker file:
@@ -881,17 +1244,25 @@ namespace Lucene.Net.Index
 
         /// <summary>
         /// Returns current generation. </summary>
-        public long Generation => generation;
+        public long Generation
+        {
+            get => generation;
+            set => generation = value;
+        }
 
         /// <summary>
         /// Returns last succesfully read or written generation. </summary>
-        public long LastGeneration => lastGeneration;
+        public long LastGeneration
+        {
+            get => lastGeneration;
+            set => lastGeneration = value;
+        }
 
         /// <summary>
         /// If non-null, information about retries when loading
         /// the segments file will be printed to this.
         /// </summary>
-        public static TextWriter InfoStream 
+        public static TextWriter InfoStream
         {
             set =>
                 // LUCENENET specific - use a SafeTextWriterWrapper to ensure that if the TextWriter
@@ -1398,7 +1769,7 @@ namespace Lucene.Net.Index
         /// method if changes have been made to this <see cref="SegmentInfos"/> instance
         /// </para>
         /// </summary>
-        internal void Commit(Directory dir)
+        public void Commit(Directory dir)
         {
             PrepareCommit(dir);
             FinishCommit(dir);
@@ -1430,7 +1801,7 @@ namespace Lucene.Net.Index
         public IDictionary<string, string> UserData
         {
             get => userData;
-            internal set
+            set
             {
                 if (value is null)
                 {
