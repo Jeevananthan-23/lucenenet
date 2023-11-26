@@ -185,8 +185,8 @@ namespace Lucene.Net.Index
             Process p = Process.Start(startInfo);
 
             //// LUCENENET: For debugging, it is helpful to do this sometimes
-            //var stdOut = p.StandardOutput.ReadToEnd();
-            //var stdErr = p.StandardError.ReadToEnd();
+            var stdOut = p.StandardOutput.ReadToEnd();
+            var stdErr = p.StandardError.ReadToEnd();
 
             return p;
         }

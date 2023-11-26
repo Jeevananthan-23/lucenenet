@@ -385,6 +385,9 @@ namespace Lucene.Net.Store
             {
                 return dir.FileLength(name);
             }
+
+            public override IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context) => throw new NotImplementedException();
+            public override void RenameFile(string source, string dest) => throw new NotImplementedException();
         }
     }
 }

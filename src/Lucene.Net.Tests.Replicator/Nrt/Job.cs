@@ -11,9 +11,9 @@ namespace Lucene.Net.Tests.Replicator.Nrt
     /** Runs CopyJob(s) in background thread; each ReplicaNode has an instance of this
  *  running.  At a given there could be one NRT copy job running, and multiple
  *  pre-warm merged segments jobs. */
-    class Jobs : ThreadJob, IDisposable
-    {
 
+    internal class Jobs : ThreadJob, IDisposable
+    {
         private readonly PriorityQueue<CopyJob> queue = new SimpleCopyJobQueue(100);
 
         private readonly Node node;
@@ -26,6 +26,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         private bool finish;
 
         /** Returns null if we are closing, else, returns the top job or waits for one to arrive if the queue is empty. */
+
         private SimpleCopyJob GetNextJob()
         {
             UninterruptableMonitor.Enter(this);
@@ -59,6 +60,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 UninterruptableMonitor.Exit(this);
             }
         }
+
         public override void Run()
         {
             while (true)
@@ -66,13 +68,13 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 SimpleCopyJob topJob = GetNextJob();
                 if (topJob == null)
                 {
-                    Debug.Assert( finish);
+                    Debug.Assert(finish);
                     break;
                 }
 
                 this.Name = ("jobs o" + topJob.ord);
 
-                Debug.Assert( topJob != null);
+                Debug.Assert(topJob != null);
 
                 bool result;
                 try
@@ -174,11 +176,12 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             }
             else
             {
-                throw  AlreadyClosedException.Create("closed");
+                throw AlreadyClosedException.Create("closed");
             }
         }
 
         /** Cancels any existing jobs that are copying the same file names as this one */
+
         public void CancelConflictingJobs(CopyJob newJob)
         {
             foreach (CopyJob job in queue.HeapArray)

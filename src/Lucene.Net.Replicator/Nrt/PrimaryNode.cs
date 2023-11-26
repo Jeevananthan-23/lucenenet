@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-
 using J2N.Collections.Generic.Extensions;
-using J2N.Numerics;
 using J2N.Threading.Atomic;
 using Lucene.Net.Diagnostics;
 using Lucene.Net.Index;
@@ -49,7 +47,6 @@ namespace Lucene.Net.Replicator.Nrt
     /// </remarks>
     public abstract class PrimaryNode : Node
     {
-
         // Current NRT segment infos, incRef'd with IndexWriter.deleter:
         private SegmentInfos curInfos;
 
@@ -115,13 +112,12 @@ namespace Lucene.Net.Replicator.Nrt
                 try
                 {
                     // TODO: this is test code specific!!
-                    Message("init: marker hit count: " + s.Search(new TermQuery(new Term("marker", "marker")),1).TotalHits);
+                    Message("init: marker hit count: " + s.Search(new TermQuery(new Term("marker", "marker")), 1).TotalHits);
                 }
                 finally
                 {
                     mgr.Release(s);
                 }
-
             }
             catch (Exception t)
             {
@@ -177,7 +173,6 @@ namespace Lucene.Net.Replicator.Nrt
 
         public long GetLastCommitVersion()
         {
-
             UninterruptableMonitor.Enter(this);
             try
             {
@@ -194,7 +189,6 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
 
         /// <exception cref="IOException"/>
@@ -237,10 +231,10 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
 
         /** Called once replica is done (or failed) copying an NRT point */
+
         /// <exception cref="System.IO.IOException"/>
         public void ReleaseCopyState(CopyState copyState)
         {
@@ -262,7 +256,7 @@ namespace Lucene.Net.Replicator.Nrt
             return IsClosed(false);
         }
 
-        bool IsClosed(bool allowClosing)
+        private bool IsClosed(bool allowClosing)
         {
             return "closed".Equals(state) || (allowClosing == false && "closing".Equals(state));
         }
@@ -291,7 +285,7 @@ namespace Lucene.Net.Replicator.Nrt
                     searcher = mgr.Acquire();
                     infos = ((StandardDirectoryReader)searcher.GetIndexReader()).SegmentInfos;
                     // TODO: this is test code specific!!
-                   // Message("setCurrentInfos: marker count: " + searcher.Count(new TermQuery(new Term("marker", "marker"))) + " version=" + infos.Version + " searcher=" + searcher);
+                    // Message("setCurrentInfos: marker count: " + searcher.Count(new TermQuery(new Term("marker", "marker"))) + " version=" + infos.Version + " searcher=" + searcher);
                 }
                 finally
                 {
@@ -318,7 +312,7 @@ namespace Lucene.Net.Replicator.Nrt
                 Message("top: switch to infos=" + infos.ToString() + " version=" + infos.Version);
 
                 // Serialize the SegmentInfos:
-                RAMOutputStream @out = new RAMOutputStream("noname",new RAMFile());
+                RAMOutputStream @out = new RAMOutputStream("noname", new RAMFile());
                 infos.Write(dir);
                 byte[] infosBytes = new byte[(int)@out.GetFilePointer()];
                 @out.WriteTo(infosBytes, 0);
@@ -351,7 +345,6 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
 
         /// <exception cref="IOException"/>
@@ -384,7 +377,6 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
 
         /// <exception cref="System.IO.IOException"/>
@@ -416,6 +408,7 @@ namespace Lucene.Net.Replicator.Nrt
         }
 
         /** Called when a merge has finished, but before IW switches to the merged segment */
+
         /// <exception cref="IOException"/>
         public abstract void PreCopyMergedSegmentFiles(SegmentCommitInfo info, IDictionary<string, FileMetaData> files);
     }

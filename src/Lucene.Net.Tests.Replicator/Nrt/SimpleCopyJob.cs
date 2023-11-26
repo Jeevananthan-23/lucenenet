@@ -11,23 +11,24 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 {
     /** Handles one set of files that need copying, either because we have a
  *  new NRT point, or we are pre-copying merged files for merge warming. */
-    class SimpleCopyJob : CopyJob
-    {
-        readonly Connection c;
 
-        readonly byte[] copyBuffer = new byte[65536];
-        readonly CopyState copyState;
+    internal class SimpleCopyJob : CopyJob
+    {
+        private readonly Connection c;
+
+        private readonly byte[] copyBuffer = new byte[65536];
+        private readonly CopyState copyState;
 
         private IEnumerator<Dictionary<string, FileMetaData>> iter;
 
         public SimpleCopyJob(string reason, Connection c, CopyState copyState, SimpleReplicaNode dest, IDictionary<string, FileMetaData> files, bool highPriority, IOnceDone onceDone)
             : base(reason, files, dest, highPriority, onceDone)
         {
-
             dest.Message("create SimpleCopyJob o" + ord);
             this.c = c;
             this.copyState = copyState;
         }
+
         public override void Start()
         {
             if (iter == null)
@@ -37,7 +38,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 // Send all file names / offsets up front to avoid ping-ping latency:
                 try
                 {
-
                     // This means we resumed an already in-progress copy; we do this one first:
                     if (current != null)
                     {
@@ -72,7 +72,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                     }
 
                     dest.Message("SimpleCopyJob.init: done start files count=" + toCopy.size() + " totBytes=" + totBytes);
-
                 }
                 catch (Exception t)
                 {
@@ -85,7 +84,9 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 throw IllegalStateException.Create("already started");
             }
         }
+
         public override long GetTotalBytesCopied() => totBytesCopied;
+
         public override ISet<string> GetFileNamesToCopy()
         {
             ISet<string> fileNames = new HashSet<string>();
@@ -144,6 +145,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         }
 
         /** Do an iota of work; returns true if all copying is done */
+
         internal bool Visit()
         {
             UninterruptableMonitor.Enter(this);
@@ -214,7 +216,9 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 IOUtils.CloseWhileHandlingException(c);
             }
         }
+
         public override bool GetFailed() => exc != null;
+
         public override string ToString() => "SimpleCopyJob(ord=" + ord + " " + reason + " highPriority=" + highPriority + " files count=" + files.size() + " bytesCopied=" + totBytesCopied + " (of " + totBytes + ") filesCopied=" + copiedFiles.size() + ")";
 
         public override void RunBlocking()
@@ -226,6 +230,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 throw RuntimeException.Create("copy failed: " + cancelReason, exc);
             }
         }
+
         public override CopyState GetCopyState() => copyState;
 
         public override bool Conflicts(CopyJob _other)

@@ -34,6 +34,7 @@ namespace Lucene.Net.Replicator.Nrt
         private readonly IDictionary<string, int?> refCounts = new Dictionary<string, int?>();
         private readonly Directory dir;
         private readonly Node node;
+
         /// <exception cref="System.IO.IOException"/>
         public ReplicaFileDeleter(Node node, Directory dir)
         {
@@ -45,7 +46,7 @@ namespace Lucene.Net.Replicator.Nrt
         /// Used only by asserts: returns true if the file exists
         ///  (can be opened), false if it cannot be opened, and
         /// (unlike Java's File.exists) throws IOException if
-        ///  there's some unexpected error. 
+        ///  there's some unexpected error.
         /// </summary>
         /// <exception cref="System.IO.IOException"/>
         private static bool SlowFileExists(Directory dir, string fileName)
@@ -57,7 +58,6 @@ namespace Lucene.Net.Replicator.Nrt
             }
             catch (Exception cie) when (/*cie is NoSuchFileException ||*/ cie is FileNotFoundException)
             {
-
                 return false;
             }
         }
@@ -68,10 +68,8 @@ namespace Lucene.Net.Replicator.Nrt
             UninterruptableMonitor.Enter(this);
             try
             {
-
                 foreach (string fileName in fileNames)
                 {
-
                     if (Debugging.AssertsEnabled)
                     {
                         Debugging.Assert(SlowFileExists(dir, fileName), "file " + fileName + " does not exist!");
@@ -93,6 +91,7 @@ namespace Lucene.Net.Replicator.Nrt
                 UninterruptableMonitor.Exit(this);
             }
         }
+
         /// <exception cref="System.IO.IOException"/>
         public void DecRef(ICollection<string> fileNames)
         {
@@ -138,8 +137,8 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
+
         /// <exception cref="System.IO.IOException"/>
         private void Delete(ICollection<string> toDelete)
         {
@@ -186,8 +185,8 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
+
         /// <exception cref="System.IO.IOException"/>
         private void Delete(string fileName)
         {
@@ -218,6 +217,7 @@ namespace Lucene.Net.Replicator.Nrt
                 UninterruptableMonitor.Exit(this);
             }
         }
+
         /// <exception cref="System.IO.IOException"/>
         public void DeleteIfNoRef(string fileName)
         {
@@ -254,6 +254,7 @@ namespace Lucene.Net.Replicator.Nrt
           return new HashSet<string>(pending);
         }
         */
+
         /// <exception cref="System.IO.IOException"/>
         public void DeleteUnknownFiles(string segmentsFileName)
         {

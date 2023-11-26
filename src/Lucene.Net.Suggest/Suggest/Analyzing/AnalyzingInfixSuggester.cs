@@ -208,7 +208,7 @@ namespace Lucene.Net.Search.Suggest.Analyzing
                 // Already built; open it:
                 var config = indexWriterConfigFactory.Get(matchVersion, GetGramAnalyzer(), OpenMode.APPEND);
                 writer = new IndexWriter(dir, config);
-                m_searcherMgr = new SearcherManager(writer, true, null);
+                m_searcherMgr = new SearcherManager(writer, true, false, null);
             }
         }
 
@@ -271,7 +271,7 @@ namespace Lucene.Net.Search.Suggest.Analyzing
                 {
                     Commit();
                 }
-                m_searcherMgr = new SearcherManager(writer, true, null);
+                m_searcherMgr = new SearcherManager(writer, true, false, null);
                 success = true;
             }
             finally
@@ -351,7 +351,7 @@ namespace Lucene.Net.Search.Suggest.Analyzing
                         m_searcherMgr = null;
                     }
                     writer = new IndexWriter(dir, indexWriterConfigFactory.Get(matchVersion, GetGramAnalyzer(), OpenMode.CREATE));
-                    m_searcherMgr = new SearcherManager(writer, true, null);
+                    m_searcherMgr = new SearcherManager(writer, true, false, null);
                 }
             }
             finally

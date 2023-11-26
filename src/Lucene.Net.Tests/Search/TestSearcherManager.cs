@@ -83,7 +83,7 @@ namespace Lucene.Net.Search
                 // TODO: can we randomize the applyAllDeletes?  But
                 // somehow for final searcher we must apply
                 // deletes...
-                mgr = new SearcherManager(m_writer, true, factory);
+                mgr = new SearcherManager(m_writer, true, false, factory);
                 isNRT = true;
             }
             else
@@ -110,8 +110,8 @@ namespace Lucene.Net.Search
                 this.es = es;
             }
 
-            public override IndexSearcher NewSearcher(IndexReader r)
-            {
+            public override IndexSearcher NewSearcher(IndexReader r, IndexReader previousReader = null)
+            { 
                 IndexSearcher s = new IndexSearcher(r, es);
                 outerInstance.warmCalled = true;
                 s.Search(new TermQuery(new Term("body", "united")), 10);
@@ -278,7 +278,7 @@ namespace Lucene.Net.Search
             //TaskScheduler es = Random().NextBoolean() ? null : Executors.newCachedThreadPool(new NamedThreadFactory("testIntermediateClose"));
             TaskScheduler es = Random.NextBoolean() ? null : TaskScheduler.Default;
             SearcherFactory factory = new SearcherFactoryAnonymousClass2(this, awaitEnterWarm, awaitClose, triedReopen, es);
-            SearcherManager searcherManager = Random.NextBoolean() ? new SearcherManager(dir, factory) : new SearcherManager(writer, Random.NextBoolean(), factory);
+            SearcherManager searcherManager = Random.NextBoolean() ? new SearcherManager(dir, factory) : new SearcherManager(writer, Random.NextBoolean(), false, factory);
             if (Verbose)
             {
                 Console.WriteLine("sm created");
@@ -349,7 +349,7 @@ namespace Lucene.Net.Search
                 this.es = es;
             }
 
-            public override IndexSearcher NewSearcher(IndexReader r)
+            public override IndexSearcher NewSearcher(IndexReader r, IndexReader previousReader = null) 
             {
                 try
                 {
@@ -434,7 +434,7 @@ namespace Lucene.Net.Search
             var config = NewIndexWriterConfig(
                 TEST_VERSION_CURRENT, new MockAnalyzer(Random)).SetMergeScheduler(new ConcurrentMergeScheduler());
             IndexWriter writer = new IndexWriter(dir, config);
-            SearcherManager sm = new SearcherManager(writer, false, new SearcherFactory());
+            SearcherManager sm = new SearcherManager(writer, false, false, new SearcherFactory());
             writer.AddDocument(new Document());
             writer.Commit();
             sm.MaybeRefreshBlocking();
@@ -503,7 +503,7 @@ namespace Lucene.Net.Search
             Directory dir = NewDirectory();
             IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
             AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
-            SearcherManager sm = new SearcherManager(iw, false, new SearcherFactory());
+            SearcherManager sm = new SearcherManager(iw, false, false, new SearcherFactory());
             sm.AddListener(new RefreshListenerAnonymousClass(this, afterRefreshCalled));
             iw.AddDocument(new Document());
             iw.Commit();
@@ -562,7 +562,7 @@ namespace Lucene.Net.Search
             }
             try
             {
-                new SearcherManager(w.IndexWriter, random.NextBoolean(), theEvilOne);
+                new SearcherManager(w.IndexWriter, random.NextBoolean(), false, theEvilOne);
             }
             catch (Exception ise) when (ise.IsIllegalStateException())
             {
@@ -585,7 +585,7 @@ namespace Lucene.Net.Search
                 this.other = other;
             }
 
-            public override IndexSearcher NewSearcher(IndexReader ignored)
+            public override IndexSearcher NewSearcher(IndexReader ignored , IndexReader previousReader = null)
             {
                 return LuceneTestCase.NewSearcher(other);
             }

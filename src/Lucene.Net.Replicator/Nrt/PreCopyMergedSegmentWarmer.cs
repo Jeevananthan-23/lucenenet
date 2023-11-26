@@ -15,14 +15,12 @@
 * limitations under the License.
 */
 
-
 // TODO: or ... replica node can do merging locally?  tricky to keep things in sync, when one node merges more slowly than others...
 
 using J2N;
 using Lucene.Net.Diagnostics;
 using Lucene.Net.Index;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Lucene.Net.Replicator.Nrt
 {
@@ -32,9 +30,8 @@ namespace Lucene.Net.Replicator.Nrt
     ///  ensures that NRT reopen time on replicas is only in proportion to
     ///  flushed segment sizes, not merged segments.
     ///</summary>
-    class PreCopyMergedSegmentWarmer : IndexWriter.IndexReaderWarmer
+    internal class PreCopyMergedSegmentWarmer : IndexWriter.IndexReaderWarmer
     {
-
         private readonly PrimaryNode primary;
 
         public PreCopyMergedSegmentWarmer(PrimaryNode primary)
@@ -58,7 +55,7 @@ namespace Lucene.Net.Replicator.Nrt
                     Debugging.Assert(filesMetaData.ContainsKey(fileName) == false);
                 }
                 filesMetaData.Add(fileName, metaData);
-                primary.finishedMergedFiles.Add(fileName); //moved here 
+                primary.finishedMergedFiles.Add(fileName); //moved here
             }
             //from here to up because we don't have AddAll() in Set
             primary.PreCopyMergedSegmentFiles(info, filesMetaData);

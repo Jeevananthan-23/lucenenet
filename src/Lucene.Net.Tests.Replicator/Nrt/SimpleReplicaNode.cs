@@ -15,18 +15,19 @@ using Directory = Lucene.Net.Store.Directory;
 
 namespace Lucene.Net.Tests.Replicator.Nrt
 {
-    class SimpleReplicaNode : ReplicaNode
+    internal class SimpleReplicaNode : ReplicaNode
     {
-        readonly int tcpPort;
-        readonly Jobs jobs;
+        internal readonly int tcpPort;
+        internal readonly Jobs jobs;
 
         // Rate limits incoming bytes/sec when fetching files:
-        readonly RateLimiter fetchRateLimiter;
-        readonly AtomicInt64 bytesSinceLastRateLimiterCheck = new AtomicInt64();
-        readonly Random random;
+        internal readonly RateLimiter fetchRateLimiter;
+
+        internal readonly AtomicInt64 bytesSinceLastRateLimiterCheck = new AtomicInt64();
+        internal readonly Random random;
 
         /** Changes over time, as primary node crashes and moves around */
-        int curPrimaryTCPPort;
+        private int curPrimaryTCPPort;
 
         public SimpleReplicaNode(Random random, int id, int tcpPort, string indexPath, long curPrimaryGen, int primaryTCPPort,
                                  SearcherFactory searcherFactory, bool doCheckIndexOnClose)
@@ -51,12 +52,10 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             jobs.Start();
         }
 
-
         protected override void Launch(CopyJob job)
         {
             jobs.Launch(job);
         }
-
 
         public override void Dispose()
         {
@@ -73,7 +72,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             }
             base.Dispose();
         }
-
 
         protected override CopyJob NewCopyJob(string reason, IDictionary<string, FileMetaData> files, IDictionary<string, FileMetaData> prevFiles, bool highPriority, CopyJob.IOnceDone onceDone)
         {
@@ -123,12 +121,13 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             return dir;
         }
 
-       internal const byte CMD_NEW_NRT_POINT = 0;
+        internal const byte CMD_NEW_NRT_POINT = 0;
 
         // Sent by primary to replica to pre-copy merge files:
-       internal const byte CMD_PRE_COPY_MERGE = 17;
+        internal const byte CMD_PRE_COPY_MERGE = 17;
 
         /** Handles incoming request to the naive TCP server wrapping this node */
+
         internal void HandleOneConnection(TcpListener ss, AtomicBoolean stop, NetworkStream @is, Socket socket, DataInput @in, DataOutput @out, BufferedStream bos)
         {
         //Message("one connection: " + socket);
@@ -215,7 +214,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                                 mgr.Release(searcher);
                             }
                         }
-                        continue;
+                        goto outer;
 
                     case SimplePrimaryNode.CMD_SEARCH_ALL:
                         {
@@ -235,7 +234,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                                 mgr.Release(searcher);
                             }
                         }
-                        continue;
+                        goto outer;
 
                     case SimplePrimaryNode.CMD_MARKER_SEARCH:
                         {
@@ -273,7 +272,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                                 mgr.Release(searcher);
                             }
                         }
-                        continue;
+                        goto outer;
 
                     case SimplePrimaryNode.CMD_COMMIT:
                         ThreadJob.CurrentThread.Name = ("commit");
@@ -285,7 +284,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                         ThreadJob.CurrentThread.Name = ("close");
                         ss.Stop();
                         @out.WriteByte((byte)1);
-                        break;
+                        goto outer;
 
                     case CMD_PRE_COPY_MERGE:
                         ThreadJob.CurrentThread.Name = ("merge copy");
@@ -345,7 +344,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             }
         }
 
-
         protected override void SendNewReplica()
         {
             Message("send new_replica to primary tcpPort=" + curPrimaryTCPPort);
@@ -355,7 +353,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 c.@out.WriteByte(SimplePrimaryNode.CMD_NEW_REPLICA);
                 c.@out.WriteVInt32(tcpPort);
                 c.Flush();
-                c.s.Shutdown(System.Net.Sockets.SocketShutdown.Both);
+                c.s.Shutdown(SocketShutdown.Both);
             }
             catch (Exception t)
             {

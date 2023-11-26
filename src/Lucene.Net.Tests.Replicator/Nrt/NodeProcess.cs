@@ -5,11 +5,11 @@ using Lucene.Net.Support.Threading;
 using Lucene.Net.Util;
 using System;
 using System.Diagnostics;
-using System.Net;
 
 namespace Lucene.Net.Tests.Replicator.Nrt
 {
     /** Parent JVM hold this "wrapper" to refer to each child JVM.  This is roughly equivalent e.g. to a client-side "sugar" API. */
+
     internal class NodeProcess : IDisposable
     {
         internal readonly Process p;
@@ -49,6 +49,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             Debug.Assert(initInfosVersion >= initCommitVersion, "initInfosVersion=" + initInfosVersion + " initCommitVersion=" + initCommitVersion);
             rlock = new ReentrantLock();
         }
+
         public override string ToString()
         {
             if (isPrimary)
@@ -66,7 +67,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             UninterruptableMonitor.Enter(this);
             try
             {
-
                 if (isOpen)
                 {
                     isOpen = false;
@@ -120,6 +120,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
         /** Ask the primary node process to flush.  We send it all currently up replicas so it can notify them about the new NRT point.  Returns the newly
          *  flushed version, or a negative (current) version if there were no changes. */
+
         public long Flush(int atLeastMarkerCount)
         {
             UninterruptableMonitor.Enter(this);

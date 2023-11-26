@@ -17,6 +17,5 @@ namespace Lucene.Net.Replicator.Nrt
         internal static void PrintStackTrace(this Exception e, TextWriter destination) => destination.WriteLine(e.StackTrace);
 
         internal static double TimeUnitSecondsToNanos(int num) => throw new NotImplementedException(); //TimeUnit.SECONDS.toNanos(1)
-
     }
 }

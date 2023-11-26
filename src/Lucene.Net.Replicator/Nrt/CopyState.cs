@@ -18,13 +18,10 @@
 using J2N.Collections.ObjectModel;
 using Lucene.Net.Diagnostics;
 using Lucene.Net.Index;
-using Lucene.Net.Support;
-using System;
 using System.Collections.Generic;
 
 namespace Lucene.Net.Replicator.Nrt
 {
-
     /// <summary>
     /// Holds incRef'd file level details for one point-in-time segment infos on the primary node.
     /// </summary>
@@ -33,7 +30,6 @@ namespace Lucene.Net.Replicator.Nrt
     /// </remarks>
     public class CopyState
     {
-
         public readonly IDictionary<string, FileMetaData> files;
         public readonly long version;
         public readonly long gen;
@@ -51,7 +47,7 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 Debugging.Assert(completedMergeFiles != null);
             }
-            this.files = new ReadOnlyDictionary<string,FileMetaData>(files);
+            this.files = new ReadOnlyDictionary<string, FileMetaData>(files);
             this.version = version;
             this.gen = gen;
             this.infosBytes = infosBytes;

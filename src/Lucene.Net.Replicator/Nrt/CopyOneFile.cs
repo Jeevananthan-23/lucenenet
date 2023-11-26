@@ -21,6 +21,7 @@ using System;
 using System.IO;
 
 /** Copies one file from an incoming DataInput to a dest filename in a local Directory */
+
 namespace Lucene.Net.Replicator.Nrt
 {
     public class CopyOneFile : IDisposable
@@ -62,6 +63,7 @@ namespace Lucene.Net.Replicator.Nrt
         }
 
         /** Transfers this file copy to another input, continuing where the first one left off */
+
         public CopyOneFile(CopyOneFile other, DataInput @in)
         {
             this.@in = @in;
@@ -84,6 +86,7 @@ namespace Lucene.Net.Replicator.Nrt
         }
 
         /** Copy another chunk of bytes, returning true once the copy is done */
+
         /// <exception cref="IOException"/>
         public bool Visit()
         {

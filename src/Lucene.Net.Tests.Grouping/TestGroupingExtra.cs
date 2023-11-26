@@ -88,7 +88,7 @@ namespace Lucene.Net.Search.Grouping
             groupingSearch.SetFillSortFields(true);
             groupingSearch.SetCachingInMB(10, cacheScores: true);
 
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query matchAllQuery = new MatchAllDocsQuery();
             ITopGroups<BytesRef> topGroups = groupingSearch.SearchByField(searcher, matchAllQuery, groupOffset: 0, groupLimit: 3);
@@ -198,7 +198,7 @@ namespace Lucene.Net.Search.Grouping
             groupingSearch.SetGroupSort(new Sort(new SortField("major", SortFieldType.INT32)));
             groupingSearch.SetSortWithinGroup(new Sort(new SortField("minor", SortFieldType.INT32)));
 
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query matchAllQuery = new MatchAllDocsQuery();
             ITopGroups<MutableValueStr> topGroups = groupingSearch.SearchByFunction<MutableValueStr>(searcher, matchAllQuery, groupOffset: 0, groupLimit: 10);
@@ -292,7 +292,7 @@ namespace Lucene.Net.Search.Grouping
             groupingSearch.SetFillSortFields(true);
             groupingSearch.SetCachingInMB(10, cacheScores: true);
 
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query matchAllQuery = new MatchAllDocsQuery();
             ITopGroups<object> topGroups = groupingSearch.Search(searcher, matchAllQuery, groupOffset: 0, groupLimit: 3);
@@ -387,7 +387,7 @@ namespace Lucene.Net.Search.Grouping
             groupingSearch.SetFillSortFields(true);
             groupingSearch.SetCachingInMB(10, cacheScores: true);
 
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query matchAllQuery = new MatchAllDocsQuery();
             ITopGroups<object> topGroups = groupingSearch.Search(searcher, matchAllQuery, groupOffset: 0, groupLimit: 3);
@@ -496,7 +496,7 @@ namespace Lucene.Net.Search.Grouping
             groupingSearch.SetGroupSort(new Sort(new SortField("major", SortFieldType.INT32)));
             groupingSearch.SetSortWithinGroup(new Sort(new SortField("minor", SortFieldType.INT32)));
 
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query matchAllQuery = new MatchAllDocsQuery();
             ITopGroups<BytesRef> topGroups = groupingSearch.Search<BytesRef>(searcher, matchAllQuery, groupOffset: 0, groupLimit: 10);
@@ -607,7 +607,7 @@ namespace Lucene.Net.Search.Grouping
             groupingSearch.SetGroupSort(new Sort(new SortField("major", SortFieldType.INT32)));
             groupingSearch.SetSortWithinGroup(new Sort(new SortField("minor", SortFieldType.INT32)));
 
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query matchAllQuery = new MatchAllDocsQuery();
             ITopGroups<MutableValue> topGroups = groupingSearch.Search<MutableValue>(searcher, matchAllQuery, groupOffset: 0, groupLimit: 10);
@@ -702,7 +702,7 @@ namespace Lucene.Net.Search.Grouping
             groupingSearch.SetGroupSort(new Sort(new SortField("major", SortFieldType.INT32)));
             groupingSearch.SetSortWithinGroup(new Sort(new SortField("minor", SortFieldType.INT32)));
 
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query matchAllQuery = new MatchAllDocsQuery();
 
@@ -796,7 +796,7 @@ namespace Lucene.Net.Search.Grouping
             groupingSearch.SetGroupSort(new Sort(new SortField("major", SortFieldType.INT32)));
             groupingSearch.SetSortWithinGroup(new Sort(new SortField("minor", SortFieldType.INT32)));
 
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query matchAllQuery = new MatchAllDocsQuery();
 
@@ -883,7 +883,7 @@ namespace Lucene.Net.Search.Grouping
 
 
             //Begin work to do grouping search manually without use of GroupingSearch class.
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query query = new MatchAllDocsQuery();
             Filter filter = null;
@@ -1010,7 +1010,7 @@ namespace Lucene.Net.Search.Grouping
 
 
             //Begin work to do grouping search manually without use of GroupingSearch class.
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query query = new MatchAllDocsQuery();
             Filter filter = null;
@@ -1133,7 +1133,7 @@ namespace Lucene.Net.Search.Grouping
 
 
             //Begin work to do grouping search manually without use of GroupingSearch class.
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query query = new MatchAllDocsQuery();
             Filter filter = null;
@@ -1246,7 +1246,7 @@ namespace Lucene.Net.Search.Grouping
 
 
             //Begin work to do grouping search manually without use of GroupingSearch class.
-            IndexReader reader = writer.GetReader(applyAllDeletes: true);
+            IndexReader reader = writer.GetReader(applyAllDeletes: true, false);
             IndexSearcher searcher = new IndexSearcher(reader);
             Query query = new MatchAllDocsQuery();
             Filter filter = null;

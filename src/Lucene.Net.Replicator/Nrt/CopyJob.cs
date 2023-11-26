@@ -16,9 +16,9 @@
  */
 
 using J2N;
-using JCG = J2N.Collections.Generic;
 using J2N.Threading.Atomic;
-using Lucene.Net.Replicator.Nrt;
+using Lucene.Net.Diagnostics;
+using Lucene.Net.Index;
 using Lucene.Net.Support;
 using Lucene.Net.Support.Threading;
 using Lucene.Net.Util;
@@ -26,23 +26,21 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using Lucene.Net.Diagnostics;
-using Lucene.Net.Index;
 using System.Linq;
-using System.ComponentModel;
+using JCG = J2N.Collections.Generic;
 
 namespace Lucene.Net.Replicator.Nrt
 {
     ///<summary>
     ///
-    ///Handles copying one set of files, e.g. all files for a new NRT point, or files for pre-copying a merged segment.
-    ///This notifies the caller via OnceDone when the job finishes or failed.
+    /// Handles copying one set of files, e.g. all files for a new NRT point, or files for pre-copying a merged segment.
+    /// This notifies the caller via OnceDone when the job finishes or failed.
     ///
     /// @lucene.experimental
     /// </summary>
     public abstract class CopyJob : IComparable<CopyJob>
     {
-        private readonly static AtomicInt64 counter = new AtomicInt64();
+        private static readonly AtomicInt64 counter = new AtomicInt64();
         protected readonly ReplicaNode dest;
 
         protected readonly IDictionary<string, FileMetaData> files;
@@ -69,6 +67,7 @@ namespace Lucene.Net.Replicator.Nrt
 
         // Set when we are cancelled
         protected volatile Exception exc;
+
         protected volatile string cancelReason;
 
         // toString may concurrently access this:
@@ -96,11 +95,13 @@ namespace Lucene.Net.Replicator.Nrt
         }
 
         /** Callback invoked by CopyJob once all files have (finally) finished copying */
+
         public interface IOnceDone
         {
             /// <exception cref="IOException"/>
             void Run(CopyJob job);
         }
+
         public class OnceDoneAction : IOnceDone
         {
             private readonly Action<CopyJob> action;
@@ -109,6 +110,7 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 this.action = action;
             }
+
             public void Run(CopyJob job)
             {
                 action(job);
@@ -122,29 +124,25 @@ namespace Lucene.Net.Replicator.Nrt
         /// <exception cref="IOException"/>
         public virtual void TransferAndCancel(CopyJob prevJob)
         {
-            UninterruptableMonitor.Enter(this);
+            UninterruptableMonitor.Enter(prevJob);
             try
             {
-                lock (prevJob)
+                dest.Message("CopyJob: now transfer prevJob " + prevJob);
+                try
                 {
-                    dest.Message("CopyJob: now transfer prevJob " + prevJob);
-                    try
-                    {
-                        _transferAndCancel(prevJob);
-                    }
-                    catch (Exception t)
-                    {
-                        dest.Message("xfer: exc during transferAndCancel");
-                        Cancel("exc during transferAndCancel", t);
-                        IOUtils.ReThrowUnchecked(t); //rethrowAlways
-                    }
+                    _transferAndCancel(prevJob);
+                }
+                catch (Exception t)
+                {
+                    dest.Message("xfer: exc during transferAndCancel");
+                    Cancel("exc during transferAndCancel", t);
+                    IOUtils.ReThrowUnchecked(t); //rethrowAlways
                 }
             }
             finally
             {
-                UninterruptableMonitor.Exit(this);
+                UninterruptableMonitor.Exit(prevJob);
             }
-
         }
 
         /// <exception cref="IOException"/>
@@ -178,7 +176,7 @@ namespace Lucene.Net.Replicator.Nrt
 
                 while (it.MoveNext())
                 {
-                    KeyValuePair<string, FileMetaData> ent = it.MoveNext()  ? it.Current  : new KeyValuePair<string, FileMetaData>();
+                    KeyValuePair<string, FileMetaData> ent = it.MoveNext() ? it.Current : new KeyValuePair<string, FileMetaData>();
                     string fileName = ent.Key;
                     string prevTmpFileName = prevJob.copiedFiles[fileName];
                     if (prevTmpFileName != null)
@@ -274,12 +272,12 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
 
         protected abstract CopyOneFile NewCopyOneFile(CopyOneFile current);
 
         /** Begin copying files */
+
         /// <exception cref="IOException"/>
         public abstract void Start();
 
@@ -287,6 +285,7 @@ namespace Lucene.Net.Replicator.Nrt
                * Use current thread (blocking) to do all copying and then return once done, or throw exception
                * on failure
                */
+
         /// <exception cref="IOException"/>
         public abstract void RunBlocking();
 
@@ -331,23 +330,28 @@ namespace Lucene.Net.Replicator.Nrt
         }
 
         /** Return true if this job is trying to copy any of the same files as the other job */
+
         public abstract bool Conflicts(CopyJob other);
 
         /** Renames all copied (tmp) files to their true file names */
+
         /// <exception cref="IOException"/>
         public abstract void Finish();
 
         public abstract bool GetFailed();
 
         /** Returns only those file names (a subset of {@link #getFileNames}) that need to be copied */
+
         public abstract ISet<string> GetFileNamesToCopy();
 
         /** Returns all file names referenced in this copy job */
+
         public abstract ISet<string> GetFileNames();
 
         public abstract CopyState GetCopyState();
 
         public abstract long GetTotalBytesCopied();
+
         public virtual int CompareTo(CopyJob other) => throw new NotImplementedException();
     }
 }

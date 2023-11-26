@@ -68,7 +68,7 @@ namespace Lucene.Net.Store
         {
             var f = new DenseRAMFile();
             // output part
-            var @out = new RAMOutputStream(f);
+            var @out = new RAMOutputStream("none",f);
             var b1 = new byte[RAMOutputStream.BUFFER_SIZE];
             var b2 = new byte[RAMOutputStream.BUFFER_SIZE / 3];
             for (int i = 0; i < b1.Length; i++)

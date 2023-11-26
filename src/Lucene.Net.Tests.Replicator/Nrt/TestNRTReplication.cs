@@ -17,20 +17,15 @@ using System.Threading;
 
 namespace Lucene.Net.Tests.Replicator.Nrt
 {
-
-
-    /*"test C:\\Users\\admin\\Projects\\Dotnet Projects local Repo\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\bin\\Debug\\net7.0\\Lucene.Net.Tests.Replicator.dll --framework net7.0 --filter 
-     * TestNRTReplication --logger:\"console;verbosity=normal\" -- RunConfiguration.TargetPlatform=x64 TestRunParameters.Parameter(name=\\\"assert\\\", value=\\\"true\\\") 
-     * TestRunParameters.Parameter(name=\\\"tests:seed\\\", value=\\\"0x2e6caf7b36b71a2\\\") TestRunParameters.Parameter(name=\\\"tests:culture\\\", value=\\\"ff-Latn\\\") 
-     * TestRunParameters.Parameter(name=\\\"tests:nrtreplication.primaryTCPPort\\\", value=\\\"\\\") TestRunParameters.Parameter(name=\\\"tests:nrtreplication.closeorcrash\\\", value=\\\"false\\\") 
-     * TestRunParameters.Parameter(name=\\\"tests:nrtreplication.node\\\", value=\\\"true\\\") TestRunParameters.Parameter(name=\\\"tests:nrtreplication.nodeid\\\", value=\\\"0\\\") 
-     * TestRunParameters.Parameter(name=\\\"tests:nrtreplication.startNS\\\", value=\\\"269378253865000\\\") 
-     * TestRunParameters.Parameter(name=\\\"tests:nrtreplication.indexpath\\\", value=\\\"C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp\\primary-lfvw102g\\\")
+    /*"test C:\\Users\\admin\\Projects\\Dotnet Projects local Repo\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\bin\\Debug\\net7.0\\Lucene.Net.Tests.Replicator.dll --framework net7.0 --filter
+    TestNRTReplication --logger:\"console;verbosity=normal\" -- RunConfiguration.TargetPlatform=x64 TestRunParameters.Parameter(name=\\\"assert\\\", value=\\\"true\\\")
+    TestRunParameters.Parameter(name=\\\"tests:seed\\\", value=\\\"0x2e6caf7b36b71a2\\\") TestRunParameters.Parameter(name=\\\"tests:culture\\\", value=\\\"ff-Latn\\\")
+    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.primaryTCPPort\\\", value=\\\"\\\") TestRunParameters.Parameter(name=\\\"tests:nrtreplication.closeorcrash\\\", value=\\\"false\\\")
+    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.node\\\", value=\\\"true\\\") TestRunParameters.Parameter(name=\\\"tests:nrtreplication.nodeid\\\", value=\\\"0\\\")
+    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.startNS\\\", value=\\\"269378253865000\\\")
+    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.indexpath\\\", value=\\\"C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp\\primary-lfvw102g\\\")
     TestRunParameters.Parameter(name=\\\"tests:nrtreplication.checkonclose\\\", value=\\\"true\\\") TestRunParameters.Parameter(name=\\\"tests:nrtreplication.isPrimary\\\", value=\\\"true\\\")
     TestRunParameters.Parameter(name=\\\"tests:nrtreplication.forcePrimaryVersion\\\", value=\\\"-1\\\") TestRunParameters.Parameter(name=\\\"tests:nightly\\\", value=\\\"true\\\")"
-
-
-
 
     "test C:\\Users\\admin\\Projects\\Dotnet Projects local Repo\\lucenenet\\src\\Lucene.Net.Tests._I-J\\bin\\Debug\\net7.0\\Lucene.Net.Tests._I-J.dll --framework net7.0 --filter
     TestIndexWriterOnJRECrash --logger:\"console;verbosity=normal\" -- RunConfiguration.TargetPlatform=x64 TestRunParameters.Parameter(name=\\\"assert\\\", value=\\\"true\\\")
@@ -42,20 +37,21 @@ namespace Lucene.Net.Tests.Replicator.Nrt
     // MockRandom's .sd file has no index header/footer:
     /*    @SuppressCodecs({ "MockRandom", "Memory", "Direct", "SimpleText"})
     @SuppressSysoutChecks(bugUrl = "Stuff gets printed, important stuff for debugging a failure")*/
+
     [SuppressCodecs("MockRandom", "Memory", "Direct", "SimpleText")]
     [TestFixture]
     public class TestNRTReplication : LuceneTestCase
     {
-
         /** cwd where we start each child (server) node */
         private DirectoryInfo childTempDir;
 
-        readonly AtomicInt64 nodeStartCounter = new AtomicInt64();
+        private readonly AtomicInt64 nodeStartCounter = new AtomicInt64();
         private long nextPrimaryGen;
         private long lastPrimaryGen;
-        LineFileDocs docs;
+        private LineFileDocs docs;
 
         /** Launches a child "server" (separate JVM), which is either primary or replica node */
+
         //@SuppressForbidden(reason = "ProcessBuilder requires java.io.File for CWD")
         private NodeProcess StartNode(int primaryTCPPort, int id, DirectoryInfo indexPath, long forcePrimaryVersion, bool willCrash)
         {
@@ -77,7 +73,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                     $"RunConfiguration.TargetPlatform={GetTargetPlatform()}"
             });
 
-
             // LUCENENET NOTE: Since in our CI environment we create a lucene.testSettings.config file
             // for all tests, we need to pass some of these settings as test run parameters to override
             // for this process. These are read as system properties on the inside of the application.
@@ -91,7 +86,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             if (primaryTCPPort != -1)
             {
                 // I am a replica
-                cmd.Add(TestRunParameter("tests:nrtreplication.primaryTCPPort" ,primaryTCPPort.ToString()));
+                cmd.Add(TestRunParameter("tests:nrtreplication.primaryTCPPort", primaryTCPPort.ToString()));
                 myPrimaryGen = lastPrimaryGen;
             }
             else
@@ -99,44 +94,42 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 myPrimaryGen = nextPrimaryGen++;
                 lastPrimaryGen = myPrimaryGen;
             }
-            cmd.Add(TestRunParameter("tests:nrtreplication.primaryGen" , myPrimaryGen.ToString()));
-            cmd.Add(TestRunParameter("tests:nrtreplication.closeorcrash","false"));
+            cmd.Add(TestRunParameter("tests:nrtreplication.primaryGen", myPrimaryGen.ToString()));
+            cmd.Add(TestRunParameter("tests:nrtreplication.closeorcrash", "false"));
 
-            cmd.Add(TestRunParameter("tests:nrtreplication.node","true"));
-            cmd.Add(TestRunParameter("tests:nrtreplication.nodeid" , id.ToString()));
-            cmd.Add(TestRunParameter("tests:nrtreplication.startNS" , Node.globalStartNS.ToString()));
-            cmd.Add(TestRunParameter("tests:nrtreplication.indexpath" , indexPath.FullName));
-            cmd.Add(TestRunParameter("tests:nrtreplication.checkonclose","true"));
+            cmd.Add(TestRunParameter("tests:nrtreplication.node", "true"));
+            cmd.Add(TestRunParameter("tests:nrtreplication.nodeid", id.ToString()));
+            cmd.Add(TestRunParameter("tests:nrtreplication.startNS", Node.globalStartNS.ToString()));
+            cmd.Add(TestRunParameter("tests:nrtreplication.indexpath", indexPath.FullName));
+            cmd.Add(TestRunParameter("tests:nrtreplication.checkonclose", "true"));
 
             if (primaryTCPPort == -1)
             {
                 // We are the primary node
-                cmd.Add(TestRunParameter("tests:nrtreplication.isPrimary","true"));
-                cmd.Add(TestRunParameter("tests:nrtreplication.forcePrimaryVersion" , forcePrimaryVersion.ToString()));
+                cmd.Add(TestRunParameter("tests:nrtreplication.isPrimary", "true"));
+                cmd.Add(TestRunParameter("tests:nrtreplication.forcePrimaryVersion", forcePrimaryVersion.ToString()));
             }
 
-           
             // passing NIGHTLY to this test makes it run for much longer, easier to catch it in the act...
             cmd.Add(TestRunParameter("tests:nightly", "true"));
-           /* cmd.Add("-ea");
-            cmd.Add("-cp");
-            cmd.Add(SystemProperties.GetProperty("java.class.var"));
-            cmd.Add("org.junit.runner.JUnitCore");*/
-           // cmd.Add(getClass().getName().replace(getClass().getSimpleName(), "SimpleServer"));
+            cmd.Add(typeof(TestNRTReplication).FullName.Replace(typeof(TestNRTReplication).Name, "SimpleServer"));
+            /* cmd.Add("-ea");
+             cmd.Add("-cp");
+             cmd.Add(SystemProperties.GetProperty("java.class.var"));
+             cmd.Add("org.junit.runner.JUnitCore");*/
+            // cmd.Add(getClass().getName().replace(getClass().getSimpleName(), "SimpleServer"));
 
-
-           
             // Set up the process to run the console app
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = string.Join(" ",cmd),
+                Arguments = string.Join(" ", cmd),
                 WorkingDirectory = theDirectory,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
             };
-            
+
             Message("child process command: " + cmd);
 
             Process p = Process.Start(startInfo);
@@ -144,7 +137,9 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             TextReader r;
             try
             {
-                r = IOUtils.GetDecodingReader(p.StandardOutput.BaseStream, Encoding.UTF8);
+                r = IOUtils.GetDecodingReader(p.StandardError.BaseStream, Encoding.UTF8);
+                cmd.Clear();
+                cmd.Add(SystemProperties.GetProperty("tests:nrtreplication.primaryGen"));
             }
             catch (UnsupportedOperationException uee)
             {
@@ -154,12 +149,14 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             int tcpPort = -1;
             long initCommitVersion = -1;
             long initInfosVersion = -1;
-            Regex logTimeStart = new Regex("^[0-9\\.]+s .*");
+            Regex logTimeStart = new Regex("^[0-9\\.]+s .*", RegexOptions.Compiled);
             bool sawExistingSegmentsFile = false;
 
             while (true)
             {
                 string l = r.ReadLine();
+                cmd.Clear();
+                cmd.Add(l);
                 if (l == null)
                 {
                     Message("top: node=" + id + " failed to start");
@@ -251,9 +248,9 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
         private sealed class ThreadJobAnonymousClass : ThreadJob
         {
-            Process p;
-            bool finalWillCrash;
-            int id;
+            private Process p;
+            private bool finalWillCrash;
+            private int id;
 
             public ThreadJobAnonymousClass(Process proc, bool finalWillCrash, int id)
             {
@@ -295,7 +292,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             docs = new LineFileDocs(Random);
         }
 
-
         public override void TearDown()
         {
             base.TearDown();
@@ -306,7 +302,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestReplicateDeleteAllDocuments()
         {
-
             var primaryPath = CreateTempDir("primary");
             NodeProcess primary = StartNode(-1, 0, primaryPath, -1, false);
 
@@ -318,7 +313,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
             // Index 10 docs into primary:
             LineFileDocs docs = new LineFileDocs(Random);
-            Connection primaryC = new Connection(primary.tcpPort);
+            using Connection primaryC = new Connection(primary.tcpPort);
             primaryC.@out.WriteByte(SimplePrimaryNode.CMD_INDEXING);
             for (int i = 0; i < 10; i++)
             {
@@ -385,7 +380,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestReplicateForceMerge()
         {
-
             var primaryPath = CreateTempDir("primary");
             NodeProcess primary = StartNode(-1, 0, primaryPath, -1, false);
 
@@ -439,7 +433,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestReplicaCrashNoCommit()
         {
-
             var primaryPath = CreateTempDir("primary");
             NodeProcess primary = StartNode(-1, 0, primaryPath, -1, false);
 
@@ -489,7 +482,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestReplicaCrashWithCommit()
         {
-
             var primaryPath = CreateTempDir("primary");
             NodeProcess primary = StartNode(-1, 0, primaryPath, -1, false);
 
@@ -536,7 +528,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestIndexingWhileReplicaIsDown()
         {
-
             var primaryPath = CreateTempDir("primary");
             NodeProcess primary = StartNode(-1, 0, primaryPath, -1, false);
 
@@ -607,7 +598,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestCrashPrimary1()
         {
-
             var path1 = CreateTempDir("1");
             NodeProcess primary = StartNode(-1, 0, path1, -1, true);
 
@@ -655,7 +645,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestCrashPrimary2()
         {
-
             var path1 = CreateTempDir("1");
             NodeProcess primary = StartNode(-1, 0, path1, -1, true);
 
@@ -730,7 +719,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestCrashPrimary3()
         {
-
             var path1 = CreateTempDir("1");
             NodeProcess primary = StartNode(-1, 0, path1, -1, true);
 
@@ -795,7 +783,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestCrashPrimaryWhileCopying()
         {
-
             var path1 = CreateTempDir("1");
             NodeProcess primary = StartNode(-1, 0, path1, -1, true);
 
@@ -850,7 +837,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestCrashReplica()
         {
-
             var path1 = CreateTempDir("1");
             NodeProcess primary = StartNode(-1, 0, path1, -1, true);
 
@@ -919,7 +905,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void TestFullClusterCrash()
         {
-
             var path1 = CreateTempDir("1");
             NodeProcess primary = StartNode(-1, 0, path1, -1, true);
 
@@ -993,6 +978,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         }
 
         /** Tell primary current replicas. */
+
         private void SendReplicasToPrimary(NodeProcess primary, params NodeProcess[] replicas)
         {
             using Connection c = new Connection(primary.tcpPort);
@@ -1010,6 +996,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
         /** Verifies this node is currently searching the specified version with the specified total hit count, or that it eventually does when
          *  keepTrying is true. */
+
         private void AssertVersionAndHits(NodeProcess node, long expectedVersion, int expectedHitCount)
         {
             using Connection c = new Connection(node.tcpPort);
@@ -1045,7 +1032,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             }
         }
 
-        static void Message(string message)
+        private static void Message(string message)
         {
             long now = Time.NanoTime();
             Console.WriteLine(string.Format(

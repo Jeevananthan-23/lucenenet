@@ -169,6 +169,9 @@ namespace Lucene.Net.Index
                     fsDir.Dispose();
                 }
             }
+
+            public override IndexOutput CreateTempOutput(string prefix, string suffix, IOContext context) => throw new NotImplementedException();
+            public override void RenameFile(string source, string dest) => throw new NotImplementedException();
         }
 
         private class FaultyIndexInput : BufferedIndexInput

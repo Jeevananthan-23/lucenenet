@@ -610,7 +610,7 @@ namespace Lucene.Net.Index.Sorter
                     file = new RAMFile();
                     sorter = new DocOffsetSorter(maxDoc);
                 }
-                using (IndexOutput @out = new RAMOutputStream(file))
+                using (IndexOutput @out = new RAMOutputStream("none",file))
                 {
                     int doc;
                     int i = 0;

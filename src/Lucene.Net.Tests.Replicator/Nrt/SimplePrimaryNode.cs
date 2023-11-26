@@ -21,23 +21,23 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 {
     /** A primary node that uses simple TCP connections to send commands and copy files */
 
-    class SimplePrimaryNode : PrimaryNode
+    internal class SimplePrimaryNode : PrimaryNode
     {
+        internal readonly int tcpPort;
 
-        readonly int tcpPort;
-
-        readonly Random random;
+        internal readonly Random random;
 
         // These are updated by parent test process whenever replicas change:
-        int[] replicaTCPPorts = new int[0];
-        int[] replicaIDs = new int[0];
+        private int[] replicaTCPPorts = new int[0];
+
+        private int[] replicaIDs = new int[0];
 
         // So we only flip a bit once per file name:
-        readonly ISet<string> bitFlipped = new HashSet<string>();
+        internal readonly ISet<string> bitFlipped = new HashSet<string>();
 
-        readonly List<MergePreCopy> warmingSegments = new List<MergePreCopy>();
+        internal readonly List<MergePreCopy> warmingSegments = new List<MergePreCopy>();
 
-        readonly bool doFlipBitsDuringCopy;
+        internal readonly bool doFlipBitsDuringCopy;
 
         internal class MergePreCopy
         {
@@ -103,6 +103,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         }
 
         /** Records currently alive replicas. */
+
         public void SetReplicas(int[] replicaIDs, int[] replicaTCPPorts)
         {
             UninterruptableMonitor.Enter(this);
@@ -148,7 +149,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             return writer;
         }
 
-        public override void PreCopyMergedSegmentFiles(SegmentCommitInfo info, IDictionary<string, FileMetaData> files) 
+        public override void PreCopyMergedSegmentFiles(SegmentCommitInfo info, IDictionary<string, FileMetaData> files)
         {
             int[] replicaTCPPorts = this.replicaTCPPorts;
             if (replicaTCPPorts == null)
@@ -164,7 +165,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
             try
             {
-
                 ISet<string> fileNames = files.Keys.ToHashSet();
 
                 // Ask all currently known replicas to pre-copy this newly merged segment's files:
@@ -178,7 +178,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                         c.@out.WriteVInt32(tcpPort);
                         SimpleServer.WriteFilesMetaData(c.@out, files);
                         c.Flush();
-                        c.s.Shutdown(System.Net.Sockets.SocketShutdown.Both);
+                        c.s.Shutdown(SocketShutdown.Both);
                         Message("warm connection " + c.s);
                         preCopy.connections.Add(c);
                     }
@@ -272,7 +272,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                                     it.Reset();
                                     done = true;
                                 }
-
                             }
                             catch (Exception t)
                             {
@@ -291,16 +290,15 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         }
 
         /** Flushes all indexing ops to disk and notifies all replicas that they should now copy */
+
         private void HandleFlush(DataInput topIn, DataOutput topOut, BufferedStream bos)
         {
             ThreadJob.CurrentThread.Name = "flush";
 
             int atLeastMarkerCount = topIn.ReadVInt32();
 
-            int[]
-            replicaTCPPorts;
-            int[]
-            replicaIDs;
+            int[] replicaTCPPorts, replicaIDs;
+
             lock (this)
             {
                 replicaTCPPorts = this.replicaTCPPorts;
@@ -347,13 +345,13 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             }
             else
             {
-
                 // No changes flushed:
                 topOut.WriteInt64(-GetCopyStateVersion());
             }
         }
 
         /** Pushes CopyState on the wire */
+
         private static void WriteCopyState(CopyState state, DataOutput @out)
         {
             // TODO (opto): we could encode to byte[] once when we created the copyState, and then just send same byts to all replicas...
@@ -372,6 +370,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         }
 
         /** Called when another node (replica) wants to copy files from us */
+
         private bool HandleFetchFiles(Random random, Socket socket, DataInput destIn, DataOutput destOut, BufferedStream bos)
         {
             ThreadJob.CurrentThread.Name = "send";
@@ -478,7 +477,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             return true;
         }
 
-        static readonly FieldType tokenizedWithTermVectors = new FieldType(TextField.TYPE_STORED)
+        private static readonly FieldType tokenizedWithTermVectors = new FieldType(TextField.TYPE_STORED)
         {
             IndexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
             StoreTermVectorOffsets = true,
@@ -632,22 +631,24 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         }
 
         // Sent to primary to cutover new SIS:
-       internal const byte CMD_FLUSH = 10;
+        internal const byte CMD_FLUSH = 10;
 
         // Sent by replica to primary asking to copy a set of files over:
-       internal const byte CMD_FETCH_FILES = 1;
-       internal const byte CMD_GET_SEARCHING_VERSION = 12;
-       internal const byte CMD_SEARCH = 2;
-       internal const byte CMD_MARKER_SEARCH = 3;
-       internal const byte CMD_COMMIT = 4;
-       internal const byte CMD_CLOSE = 5;
-       internal const byte CMD_SEARCH_ALL = 21;
+        internal const byte CMD_FETCH_FILES = 1;
+
+        internal const byte CMD_GET_SEARCHING_VERSION = 12;
+        internal const byte CMD_SEARCH = 2;
+        internal const byte CMD_MARKER_SEARCH = 3;
+        internal const byte CMD_COMMIT = 4;
+        internal const byte CMD_CLOSE = 5;
+        internal const byte CMD_SEARCH_ALL = 21;
 
         // Send (to primary) the list of currently running replicas:
         internal const byte CMD_SET_REPLICAS = 16;
 
         // Multiple indexing ops
         internal const byte CMD_INDEXING = 18;
+
         internal const byte CMD_ADD_DOC = 6;
         internal const byte CMD_UPDATE_DOC = 7;
         internal const byte CMD_DELETE_DOC = 8;
@@ -660,8 +661,8 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
         internal void HandleOneConnection(Random random, TcpListener ss, AtomicBoolean stop, NetworkStream @is, Socket socket,
             DataInput @in, DataOutput @out, BufferedStream bos)
-
         {
+        outer:
             while (true)
             {
                 byte cmd;
@@ -689,7 +690,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
                 switch (cmd)
                 {
-
                     case CMD_FLUSH:
                         HandleFlush(@in, @out, bos);
                         break;
@@ -714,7 +714,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                             try
                             {
                                 long version = ((DirectoryReader)searcher.IndexReader).Version;
-                                int hitCount = searcher.Search(new TermQuery(new Term("body", "the")),1).TotalHits;
+                                int hitCount = searcher.Search(new TermQuery(new Term("body", "the")), 1).TotalHits;
                                 //Message("version=" + version + " searcher=" + searcher);
                                 @out.WriteVInt64(version);
                                 @out.WriteVInt32(hitCount);
@@ -726,7 +726,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                             }
                             bos.Flush();
                         }
-                        continue;
+                        goto outer;
 
                     case CMD_SEARCH_ALL:
                         {
@@ -746,7 +746,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                                 mgr.Release(searcher);
                             }
                         }
-                        continue;
+                        goto outer;
 
                     case CMD_MARKER_SEARCH:
                         {
@@ -755,7 +755,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                             VerifyAtLeastMarkerCount(expectedAtLeastCount, @out);
                             bos.Flush();
                         }
-                        continue;
+                        goto outer;
 
                     case CMD_COMMIT:
                         ThreadJob.CurrentThread.Name = "commit";

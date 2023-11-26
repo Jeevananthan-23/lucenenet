@@ -18,7 +18,6 @@
 using J2N.Threading.Atomic;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
-using Lucene.Net.Store;
 using Lucene.Net.Support.Threading;
 using System;
 using System.Collections.Generic;
@@ -54,7 +53,7 @@ namespace Lucene.Net.Replicator.Nrt
             this.searcherFactory = searcherFactory;
             currentInfos = infosIn;
             node.Message("SegmentInfosSearcherManager.init: use incoming infos=" + infosIn.ToString());
-            Current = SearcherManager.GetSearcher(searcherFactory, StandardDirectoryReader.Open(dir,currentInfos, null,0));
+            Current = SearcherManager.GetSearcher(searcherFactory, StandardDirectoryReader.Open(dir, currentInfos, null, 0));
             AddReaderClosedListener(Current.IndexReader);
         }
 
@@ -115,7 +114,7 @@ namespace Lucene.Net.Replicator.Nrt
             }
 
             // Open a new reader, sharing any common segment readers with the old one:
-            DirectoryReader r = StandardDirectoryReader.Open(dir, currentInfos, subs,0);
+            DirectoryReader r = StandardDirectoryReader.Open(dir, currentInfos, subs, 0);
             AddReaderClosedListener(r);
             node.Message("refreshed to version=" + currentInfos.Version + " r=" + r);
             return SearcherManager.GetSearcher(searcherFactory, r, (DirectoryReader)old.IndexReader);
@@ -129,6 +128,7 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 this.action = action;
             }
+
             public void OnClose(IndexReader reader)
             {
                 action(reader);

@@ -17,18 +17,19 @@ namespace Lucene.Net.Tests.Replicator.Nrt
     /*@SuppressCodecs({ "MockRandom", "Memory", "Direct", "SimpleText"})
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed, important stuff for debugging a failure")
 @SuppressForbidden(reason = "We need Unsafe to actually crush :-)")*/
+
     public class SimpleServer : LuceneTestCase
     {
-
-        readonly static ISet<ThreadJob> clientThreads = new HashSet<ThreadJob>();
-        readonly static AtomicBoolean stop = new AtomicBoolean();
+        private static readonly ISet<ThreadJob> clientThreads = new HashSet<ThreadJob>();
+        private static readonly AtomicBoolean stop = new AtomicBoolean();
 
         /** Handles one client connection */
+
         private class ClientHandler : ThreadJob
         {
-
             // We hold this just so we can close it to exit the process:
             private readonly TcpListener ss;
+
             private readonly Socket socket;
             private readonly Node node;
             private readonly int bufferSize;
@@ -158,7 +159,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         throw new RuntimeException("JVM refuses to die!");
           }*/
 
-       internal static void WriteFilesMetaData(DataOutput @out, IDictionary<string, FileMetaData> files)
+        internal static void WriteFilesMetaData(DataOutput @out, IDictionary<string, FileMetaData> files)
         {
             @out.WriteVInt32(files.size());
             foreach (KeyValuePair<string, FileMetaData> ent in files.ToHashSet())
@@ -175,7 +176,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             }
         }
 
-       internal static IDictionary<string, FileMetaData> ReadFilesMetaData(DataInput @in)
+        internal static IDictionary<string, FileMetaData> ReadFilesMetaData(DataInput @in)
         {
             int fileCount = @in.ReadVInt32();
             //Console.@out.WriteLine("readFilesMetaData: fileCount=" + fileCount);
@@ -196,6 +197,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         }
 
         /** Pulls CopyState off the wire */
+
         internal static CopyState ReadCopyState(DataInput @in)
         {
             // Decode a new CopyState
@@ -221,8 +223,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void Test()
         {
-
-            int id = int.Parse(SystemProperties.GetProperty("tests:nrtreplication:nodeid"));
+            int id = int.Parse(SystemProperties.GetProperty("tests:nrtreplication.nodeid"));
             ThreadJob.CurrentThread.Name = ("main child " + id);
             string indexPath = Path.GetDirectoryName(SystemProperties.GetProperty("tests:nrtreplication.indexpath"));
             bool isPrimary = SystemProperties.GetProperty("tests:nrtreplication.isPrimary") != null;
@@ -247,121 +248,121 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             bool doCheckIndexOnClose = "true".equals(SystemProperties.GetProperty("tests:nrtreplication.checkonclose"));
 
             // Create server socket that we listen for incoming requests on:
-            TcpListener ss = new(System.Net.IPAddress.Any,80);
-            //TODO this is not tested yet and many changes have to be done 
-                int tcpPort = 80;
-                Console.Out.WriteLine("\nPORT: " + tcpPort);
-                Node node;
-                if (isPrimary)
+            TcpListener ss = new(System.Net.IPAddress.Any, 80);
+            //TODO this is not tested yet and many changes have to be done
+            int tcpPort = 80;
+            Console.Out.WriteLine("\nPORT: " + tcpPort);
+            Node node;
+            if (isPrimary)
+            {
+                node = new SimplePrimaryNode(Random, indexPath, id, tcpPort, primaryGen, forcePrimaryVersion, null, doFlipBitsDuringCopy, doCheckIndexOnClose);
+                Console.Out.WriteLine("\nCOMMIT VERSION: " + ((PrimaryNode)node).GetLastCommitVersion());
+            }
+            else
+            {
+                try
                 {
-                    node = new SimplePrimaryNode(Random, indexPath, id, tcpPort, primaryGen, forcePrimaryVersion, null, doFlipBitsDuringCopy, doCheckIndexOnClose);
-                    Console.Out.WriteLine("\nCOMMIT VERSION: " + ((PrimaryNode)node).GetLastCommitVersion());
+                    node = new SimpleReplicaNode(Random, id, tcpPort, indexPath, primaryGen, primaryTCPPort, null, doCheckIndexOnClose);
+                }
+                catch (RuntimeException re)
+                {
+                    if (re.Message.StartsWith("replica cannot start"))
+                    {
+                        // this is "OK": it means MDW's refusal to delete a segments_N commit point means we cannot start:
+                        // Assert.True(re.Message, false);
+                    }
+                    throw re;
+                }
+            }
+            Console.Out.WriteLine("\nINFOS VERSION: " + node.GetCurrentSearchingVersion());
+
+            if (doRandomClose || doRandomCrash)
+            {
+                int waitForMS = isPrimary ? TestUtil.NextInt32(Random, 20000, 60000) : TestUtil.NextInt32(Random, 5000, 60000);
+                bool doClose;
+                if (doRandomCrash == false)
+                {
+                    doClose = true;
                 }
                 else
                 {
-                    try
-                    {
-                        node = new SimpleReplicaNode(Random, id, tcpPort, indexPath, primaryGen, primaryTCPPort, null, doCheckIndexOnClose);
-                    }
-                    catch (RuntimeException re)
-                    {
-                        if (re.Message.StartsWith("replica cannot start"))
-                        {
-                            // this is "OK": it means MDW's refusal to delete a segments_N commit point means we cannot start:
-                            // Assert.True(re.Message, false);
-                        }
-                        throw re;
-                    }
+                    doClose = doRandomClose && Random.nextBoolean();
                 }
-                Console.Out.WriteLine("\nINFOS VERSION: " + node.GetCurrentSearchingVersion());
 
-                if (doRandomClose || doRandomCrash)
+                if (doClose)
                 {
-                    int waitForMS = isPrimary ? TestUtil.NextInt32(Random, 20000, 60000) : TestUtil.NextInt32(Random, 5000, 60000);
-                    bool doClose;
-                    if (doRandomCrash == false)
-                    {
-                        doClose = true;
-                    }
-                    else
-                    {
-                        doClose = doRandomClose && Random.nextBoolean();
-                    }
-
-                    if (doClose)
-                    {
-                        node.Message("top: will close after " + (waitForMS / 1000.0) + " seconds");
-                    }
-                    else
-                    {
-                        node.Message("top: will crash after " + (waitForMS / 1000.0) + " seconds");
-                    }
-
-                    ThreadJob t = new ThreadJob()
-                    {
-                    };
-
-                    if (isPrimary)
-                    {
-                        t.Name = ("crasher P" + id);
-                    }
-                    else
-                    {
-                        t.Name = ("crasher R" + id);
-                    }
-
-                    // So that if node exits naturally, this thread won't prevent process exit:
-                    // t.setDaemon(true);
-                    t.Start();
+                    node.Message("top: will close after " + (waitForMS / 1000.0) + " seconds");
                 }
-                Console.Out.WriteLine("\nNODE STARTED");
-
-                //List<Thread> clientThreads = new ArrayList<>();
-
-                // Naive thread-per-connection server:
-                while (true)
+                else
                 {
-                    Socket socket;
-                    try
-                    {
-                        socket = ss.AcceptSocket();
-                    }
-                    catch (SocketException)
-                    {
-                        // when ClientHandler closes our ss we will hit this
-                        node.Message("top: server socket exc; now exit");
-                        break;
-                    }
-                    ThreadJob thread = new ClientHandler(ss, node, socket);
-                    // thread.setDaemon(true);
-                    thread.Start();
-
-                    clientThreads.Add(thread);
-
-                    // Prune finished client threads:
-                    var it = clientThreads.GetEnumerator();
-                    while (it.MoveNext())
-                    {
-                        ThreadJob t = it.MoveNext() ? it.Current : null;
-                        if (t.IsAlive == false)
-                        {
-                            it.Reset();
-                        }
-                    }
-                    //node.message(clientThreads.size() + " client threads are still alive");
+                    node.Message("top: will crash after " + (waitForMS / 1000.0) + " seconds");
                 }
 
-                stop.GetAndSet(true);
-
-                // Make sure all client threads are done, else we get annoying (yet ultimately "harmless") messages about threads still running /
-                // lingering for them to finish from the child processes:
-                foreach (var clientThread in clientThreads)
+                ThreadJob t = new ThreadJob()
                 {
-                    node.Message("top: join clientThread=" + clientThread);
-                    clientThread.Join();
-                    node.Message("top: done join clientThread=" + clientThread);
+                };
+
+                if (isPrimary)
+                {
+                    t.Name = ("crasher P" + id);
                 }
-                node.Message("done join all client threads; now close node");
+                else
+                {
+                    t.Name = ("crasher R" + id);
+                }
+
+                // So that if node exits naturally, this thread won't prevent process exit:
+                // t.setDaemon(true);
+                t.Start();
+            }
+            Console.Out.WriteLine("\nNODE STARTED");
+
+            //List<Thread> clientThreads = new ArrayList<>();
+
+            // Naive thread-per-connection server:
+            while (true)
+            {
+                Socket socket;
+                try
+                {
+                    socket = ss.AcceptSocket();
+                }
+                catch (SocketException)
+                {
+                    // when ClientHandler closes our ss we will hit this
+                    node.Message("top: server socket exc; now exit");
+                    break;
+                }
+                ThreadJob thread = new ClientHandler(ss, node, socket);
+                // thread.setDaemon(true);
+                thread.Start();
+
+                clientThreads.Add(thread);
+
+                // Prune finished client threads:
+                var it = clientThreads.GetEnumerator();
+                while (it.MoveNext())
+                {
+                    ThreadJob t = it.MoveNext() ? it.Current : null;
+                    if (t.IsAlive == false)
+                    {
+                        it.Reset();
+                    }
+                }
+                //node.message(clientThreads.size() + " client threads are still alive");
+            }
+
+            stop.GetAndSet(true);
+
+            // Make sure all client threads are done, else we get annoying (yet ultimately "harmless") messages about threads still running /
+            // lingering for them to finish from the child processes:
+            foreach (var clientThread in clientThreads)
+            {
+                node.Message("top: join clientThread=" + clientThread);
+                clientThread.Join();
+                node.Message("top: done join clientThread=" + clientThread);
+            }
+            node.Message("done join all client threads; now close node");
             node.Dispose();
         }
     }

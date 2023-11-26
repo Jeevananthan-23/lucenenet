@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 using J2N;
 using J2N.Threading.Atomic;
 using Lucene.Net.Diagnostics;
@@ -43,11 +44,10 @@ namespace Lucene.Net.Replicator.Nrt
 
     public abstract class ReplicaNode : Node
     {
-
         internal ReplicaFileDeleter deleter;
 
         ///<summary>
-        /// IncRef'd files in the current commit point: 
+        /// IncRef'd files in the current commit point:
         /// </summary>
         private readonly ICollection<string> lastCommitFiles = new JCG.HashSet<string>();
 
@@ -74,7 +74,7 @@ namespace Lucene.Net.Replicator.Nrt
         ///<summary>
         /// Merged segment files that we pre-copied, but have not yet made visible in a new NRT point.
         /// </summary>
-        readonly ISet<string> pendingMergeFiles = new ConcurrentHashSet<string>();
+        private readonly ISet<string> pendingMergeFiles = new ConcurrentHashSet<string>();
 
         /** Primary gen last time we successfully replicated: */
         protected long lastPrimaryGen;
@@ -118,6 +118,7 @@ namespace Lucene.Net.Replicator.Nrt
         }
 
         /** Start up this replica, which possibly requires heavy copying of files from the primary node, if we were down for a long time */
+
         /// <exception cref="System.IO.IOException"/>
         protected void Start(long curPrimaryGen)
         {
@@ -132,7 +133,6 @@ namespace Lucene.Net.Replicator.Nrt
                 Message("top: now start");
                 try
                 {
-
                     // Figure out what state our local index is in now:
                     string segmentsFileName = SegmentInfos.GetLastCommitSegmentsFileName(dir);
 
@@ -387,10 +387,9 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
 
-        readonly Object commitLock = new Object();
+        private readonly Object commitLock = new Object();
 
         /// <exception cref="System.IO.IOException"/>
         public override void Commit()
@@ -398,7 +397,6 @@ namespace Lucene.Net.Replicator.Nrt
             UninterruptableMonitor.Enter(commitLock);
             try
             {
-
                 SegmentInfos infos;
                 ICollection<string> indexFiles;
                 UninterruptableMonitor.Enter(this);
@@ -452,7 +450,7 @@ namespace Lucene.Net.Replicator.Nrt
         }
 
         /// <exception cref="System.IO.IOException"/>
-        void FinishNRTCopy(CopyJob job, long startNS)
+        private void FinishNRTCopy(CopyJob job, long startNS)
         {
             CopyState copyState = job.GetCopyState();
             Message("top: finishNRTCopy: version=" + copyState.version + (job.GetFailed() ? " FAILED" : "") + " job=" + job);
@@ -547,7 +545,6 @@ namespace Lucene.Net.Replicator.Nrt
                 UninterruptableMonitor.Exit(this);
             }
 
-
             int markerCount;
             IndexSearcher s = mgr.Acquire();
             try
@@ -569,20 +566,24 @@ namespace Lucene.Net.Replicator.Nrt
         /** Start a background copying job, to copy the specified files from the current primary node.  If files is null then the latest copy
          *  state should be copied.  If prevJob is not null, then the new copy job is replacing it and should 1) cancel the previous one, and
          *  2) optionally salvage e.g. partially copied and, shared with the new copy job, files. */
+
         /// <exception cref="System.IO.IOException"/>
         protected abstract CopyJob NewCopyJob(string reason, IDictionary<string, FileMetaData> files, IDictionary<string, FileMetaData> prevFiles,
                                         bool highPriority, CopyJob.IOnceDone onceDone);
 
         /** Runs this job async'd */
+
         protected abstract void Launch(CopyJob job);
 
         /** Tell primary we (replica) just started, so primary can tell us to warm any already warming merges.  This lets us keep low nrt refresh
          *  time for the first nrt sync after we started. */
+
         /// <exception cref="System.IO.IOException"/>
         protected abstract void SendNewReplica();
 
         /** Call this to notify this replica node that a new NRT infos is available on the primary.
          *  We kick off a job (runs in the background) to copy files across, and open a new reader once that's done. */
+
         /// <exception cref="System.IO.IOException"/>
         public CopyJob NewNRTPoint(long newPrimaryGen, long version)
         {
@@ -735,7 +736,6 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
 
         public bool IsCopying()
@@ -807,6 +807,7 @@ namespace Lucene.Net.Replicator.Nrt
         }
 
         /** Called when the primary changed */
+
         /// <exception cref="IOException"/>
         protected void MaybeNewPrimary(long newPrimaryGen)
         {
@@ -839,14 +840,11 @@ namespace Lucene.Net.Replicator.Nrt
             {
                 UninterruptableMonitor.Exit(this);
             }
-
         }
-
 
         /// <exception cref="IOException"/>
         protected CopyJob LaunchPreCopyMerge(AtomicBoolean finished, long newPrimaryGen, IDictionary<string, FileMetaData> files)
         {
-
             CopyJob job;
 
             MaybeNewPrimary(newPrimaryGen);
@@ -931,7 +929,6 @@ namespace Lucene.Net.Replicator.Nrt
             });
             finished.Value = true;
 
-
             job = NewCopyJob("warm merge on " + Name() + " filesNames=" + fileNames,
                              files, null, false, onceDoneImpl
                             );
@@ -958,10 +955,10 @@ namespace Lucene.Net.Replicator.Nrt
 
         /** Compares incoming per-file identity (id, checksum, header, footer) versus what we have locally and returns the subset of the incoming
          *  files that need copying */
+
         /// <exception cref="IOException"/>
         public JCG.List<KeyValuePair<string, FileMetaData>> GetFilesToCopy(IDictionary<string, FileMetaData> files)
         {
-
             bool doCopyCommitFiles = false;
             var toCopy = new JCG.List<KeyValuePair<string, FileMetaData>>();
             foreach (KeyValuePair<string, FileMetaData> ent in files)
@@ -984,7 +981,6 @@ namespace Lucene.Net.Replicator.Nrt
         /// <exception cref="IOException"/>
         private bool FileIsIdentical(string fileName, FileMetaData srcMetaData)
         {
-
             FileMetaData destMetaData = ReadLocalFileMetaData(fileName);
             if (destMetaData == null)
             {

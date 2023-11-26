@@ -14,6 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 namespace Lucene.Net.Replicator.Nrt
 {
     /// <summary>
@@ -28,6 +29,7 @@ namespace Lucene.Net.Replicator.Nrt
         /// Header and footer of the file must be identical between primary and replica to consider the files equal:
         /// </remarks>
         public readonly byte[] header;
+
         public readonly byte[] footer;
 
         public readonly long length;

@@ -54,7 +54,7 @@ namespace Lucene.Net.Search
 
             IndexWriter w = new IndexWriter(dir, iwc);
 
-            SearcherManager mgr = new SearcherManager(w, true, new SearcherFactoryAnonymousClass());
+            SearcherManager mgr = new SearcherManager(w, true, false, new SearcherFactoryAnonymousClass());
 
             const int missing = -1;
 
@@ -102,8 +102,8 @@ namespace Lucene.Net.Search
 
         private sealed class SearcherFactoryAnonymousClass : SearcherFactory
         {
-            public override IndexSearcher NewSearcher(IndexReader r)
-            {
+            public override IndexSearcher NewSearcher(IndexReader r, IndexReader previousReader = null)
+            { 
                 return new IndexSearcher(r);
             }
         }

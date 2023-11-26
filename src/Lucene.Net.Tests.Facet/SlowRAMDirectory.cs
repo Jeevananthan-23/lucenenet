@@ -203,6 +203,7 @@ namespace Lucene.Net.Facet
             private readonly Random rand;
             
             public SlowIndexOutput(SlowRAMDirectory outerInstance, IndexOutput io)
+                :base("SlowIndexOutput",io.Name)
             {
                 this.outerInstance = outerInstance;
                 this.io = io;

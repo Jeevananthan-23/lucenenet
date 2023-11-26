@@ -1,8 +1,6 @@
 ﻿using J2N;
 using J2N.Threading;
 using J2N.Threading.Atomic;
-using Lucene.Net.Util;
-using Microsoft.AspNetCore.WebUtilities;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -10,7 +8,8 @@ using System.Text.RegularExpressions;
 namespace Lucene.Net.Tests.Replicator.Nrt
 {
     /** A pipe thread. It'd be nice to reuse guava's implementation for this... */
-    class ThreadPumper
+
+    internal class ThreadPumper
     {
         public static ThreadJob Start(ThreadJob onExit, TextReader from, TextWriter to, TextWriter toFile, AtomicBoolean nodeClosing)
         {

@@ -15,17 +15,16 @@
 * limitations under the License.
 */
 
-
+using J2N;
+using Lucene.Net.Codecs;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using System;
-using Lucene.Net.Codecs;
-using J2N;
 using System.Collections.Generic;
-using Directory = Lucene.Net.Store.Directory;
-using System.Threading;
 using System.IO;
+using System.Threading;
+using Directory = Lucene.Net.Store.Directory;
 
 namespace Lucene.Net.Replicator.Nrt
 {
@@ -37,7 +36,6 @@ namespace Lucene.Net.Replicator.Nrt
     /// </remarks>
     public abstract class Node : IDisposable
     {
-
         public static bool VERBOSE_FILES = true;
         public static bool VERBOSE_CONNECTIONS = false;
 
@@ -187,10 +185,10 @@ namespace Lucene.Net.Replicator.Nrt
          *  ID) and the full footer (includes checksum), and returns the resulting {@link FileMetaData}.
          *
          *  <p>This returns null, logging a message, if there are any problems (the file does not exist, is corrupt, truncated, etc.).</p> */
+
         /// <exception cref="System.IO.IOException"/>
         public FileMetaData ReadLocalFileMetaData(string fileName)
         {
-
             IDictionary<string, FileMetaData> cache = lastFileMetaData;
             FileMetaData result;
             if (cache != null)
