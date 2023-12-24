@@ -1,6 +1,7 @@
 ﻿using J2N;
 using J2N.Threading;
 using J2N.Threading.Atomic;
+using Lucene.Net.Configuration;
 using Lucene.Net.Documents;
 using Lucene.Net.Replicator.Nrt;
 using Lucene.Net.Util;
@@ -11,29 +12,60 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace Lucene.Net.Tests.Replicator.Nrt
 {
-    /*"test C:\\Users\\admin\\Projects\\Dotnet Projects local Repo\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\bin\\Debug\\net7.0\\Lucene.Net.Tests.Replicator.dll --framework net7.0 --filter
-    TestNRTReplication --logger:\"console;verbosity=normal\" -- RunConfiguration.TargetPlatform=x64 TestRunParameters.Parameter(name=\\\"assert\\\", value=\\\"true\\\")
-    TestRunParameters.Parameter(name=\\\"tests:seed\\\", value=\\\"0x2e6caf7b36b71a2\\\") TestRunParameters.Parameter(name=\\\"tests:culture\\\", value=\\\"ff-Latn\\\")
-    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.primaryTCPPort\\\", value=\\\"\\\") TestRunParameters.Parameter(name=\\\"tests:nrtreplication.closeorcrash\\\", value=\\\"false\\\")
-    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.node\\\", value=\\\"true\\\") TestRunParameters.Parameter(name=\\\"tests:nrtreplication.nodeid\\\", value=\\\"0\\\")
-    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.startNS\\\", value=\\\"269378253865000\\\")
-    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.indexpath\\\", value=\\\"C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp\\primary-lfvw102g\\\")
-    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.checkonclose\\\", value=\\\"true\\\") TestRunParameters.Parameter(name=\\\"tests:nrtreplication.isPrimary\\\", value=\\\"true\\\")
-    TestRunParameters.Parameter(name=\\\"tests:nrtreplication.forcePrimaryVersion\\\", value=\\\"-1\\\") TestRunParameters.Parameter(name=\\\"tests:nightly\\\", value=\\\"true\\\")"
-
-    "test C:\\Users\\admin\\Projects\\Dotnet Projects local Repo\\lucenenet\\src\\Lucene.Net.Tests._I-J\\bin\\Debug\\net7.0\\Lucene.Net.Tests._I-J.dll --framework net7.0 --filter
-    TestIndexWriterOnJRECrash --logger:\"console;verbosity=normal\" -- RunConfiguration.TargetPlatform=x64 TestRunParameters.Parameter(name=\\\"assert\\\", value=\\\"true\\\")
-    TestRunParameters.Parameter(name=\\\"tests:seed\\\", value=\\\"0x678489da15cb62cc\\\") TestRunParameters.Parameter(name=\\\"tests:culture\\\", value=\\\"hsb-DE\\\")
-    TestRunParameters.Parameter(name=\\\"tests:crashmode\\\", value=\\\"true\\\") TestRunParameters.Parameter(name=\\\"tests:nightly\\\", value=\\\"true\\\")
-    TestRunParameters.Parameter(name=\\\"tempDir\\\", value=\\\"C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp\\netcrash-ftg32jbd\\\")
-    TestRunParameters.Parameter(name=\\\"tests:tempProcessToKillFile\\\", value=\\\"C:\\Users\\admin\\AppData\\Local\\Temp\\netcrash-processToKillycbldjkr.txt\\\")"
-*/
+    /*
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * "Microsoft (R) Test Execution Command Line Tool Version 17.4.0 (x64)\r\nCopyright (c) Microsoft Corporation.  All rights reserved.\r\n\r\nStarting test execution, please wait...\r\nA total of 1 test files matched the specified pattern.\r\nNUnit Adapter 3.17.0.0: Test execution started\r\nRunning all tests in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\bin\\Debug\\net7.0\\Lucene.Net.Tests.Replicator.dll\r\n   NUnit3TestExecutor discovered 68 of 68 NUnit test cases\r\nRandomSeed: 0xda6967b17112454b\r\nCulture: mgh-MZ\r\nTime Zone: (UTC-09:00) Coordinated Universal Time-09\r\nDefault Codec: CheapBastard (CheapBastardCodec)\r\nDefault Similarity: DefaultSimilarity\r\nNightly: False\r\nWeekly: False\r\nSlow: True\r\nAwaits Fix: False\r\nDirectory: random\r\nVerbose: True\r\nRandom Multiplier: 1\r\n\r\nPORT: 0\r\n%5.3fs %5.1fs:        
+     * N%d [%11s] %s\r\nIFD 1 [29/11/2023 17:26:17; NonParallelWorker]: init: current segments file is \"\"; deletionPolicy=Lucene.Net.Index.KeepOnlyLastCommitDeletionPolicy\r\nIFD 1 [29/11/2023 17:26:17; NonParallelWorker]: now checkpoint \"\" [0 segments ; isCommit = False]\r\nIFD 1 [29/11/2023 17:26:17; NonParallelWorker]: 1 msec to checkpoint\r\nIW 1 [29/11/2023 17:26:17; NonParallelWorker]: init: create=True\r\nIW 1 [29/11/2023 17:26:17; NonParallelWorker]: \r
+     * \ndir=MockDirectoryWrapper(NIOFSDirectory@C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-og1h4m4n lockFactory=NativeFSLockFactory@C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-og1h4m4n)\r\nindex=\r\nversion=4.8.0\r\nmatchVersion=LUCENE_48\r\nanalyzer=MockAnalyzer\r\nramBufferSizeMB=16\r\nmaxBufferedDocs=719\r\nmaxBufferedDeleteTerms=-1\r\nmergedSegmentWarmer=\r\nreaderTermsIndexDivisor=4\r\ntermIndexInterval=81\r\ndelPolicy=KeepOnlyLastCommitDeletionPolicy\r\ncommit=null\r\nopenMode=CREATE_OR_APPEND\r\nsimilarity=DefaultSimilarity\r\nmergeScheduler=Lucene.Net.Index.SerialMergeScheduler\r\ndefault WRITE_LOCK_TIMEOUT=1000\r\nwriteLockTimeout=1000\r\ncodec=CheapBastard\r\ninfoStream=ThreadNameFixingPrintStreamInfoStream\r\nmergePolicy=[LogByteSizeMergePolicy: minMergeSize=1677721, mergeFactor=3, maxMergeSize=2147483648, maxMergeSizeForForcedMerge=9223372036854775807, calibrateSizeByDeletes=False, maxMergeDocs=2147483647, maxCFSSegmentSizeMB=8796093022207,999, noCFSRatio=0]\r\nindexerThreadPool=Lucene.Net.Index.DocumentsWriterPerThreadPool\r\nreaderPooling=False\r\nperThreadHardLimitMB=1945\r\nuseCompoundFile=False\r\ncheckIntegrityAtMerge=False\r\n\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n   at System.Collections.Generic.Dictionary`2.get_Item(TKey key)\r\n   at Lucene.Net.Replicator.Nrt.PrimaryNode..ctor(IndexWriter writer, Int32 id, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, TextWriter printStream) in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Replicator\\Nrt\\PrimaryNode.cs:line 88\r\nWARNING: Leftover undeleted temporary files Could not remove the following files (in the order of attempts):\r\n 
+     * C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-og1h4m4n\\write.lock\r\n   C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-og1h4m4n\r\n\r\nNUnit Adapter 3.17.0.0: Test execution complete\r\n  Failed Test [565 ms]\r\n 
+     * Error Message:\r\n   Lucene.Net.Util.LuceneSystemException : The given key '__version' was not present in the dictionary.\r\n  ----> System.Collections.Generic.KeyNotFoundException : 
+     * The given key '__version' was not present in the dictionary.\r\n\r\nTo reproduce this test result:\r\n\r\nOption 1:\r\n\r\n 
+     * Apply the following assembly-level attributes:\r\n\r\n[assembly: Lucene.Net.Util.RandomSeed(\"0xda6967b17112454b\")]\r\n[assembly: NUnit.Framework.SetCulture(\"mgh-MZ\")]\r\n\r\nOption 2:\r\n\r\n Use the following .runsettings file:\r\n\r\n<RunSettings>\r\n  <TestRunParameters>\r\n    
+     * <Parameter name=\"tests:seed\" value=\"0xda6967b17112454b\" />\r\n    <Parameter name=\"tests:culture\" value=\"mgh-MZ\" />\r\n 
+     * </TestRunParameters>\r\n</RunSettings>\r\n\r\nSee the .runsettings documentation at: https://docs.microsoft.com/en-us/visualstudio/test/configure-unit-tests-by-using-a-dot-runsettings-file.\r\n  
+     * Stack Trace:\r\n     at Lucene.Net.Replicator.Nrt.PrimaryNode..ctor(IndexWriter writer, Int32 id, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, TextWriter printStream) 
+     * in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Replicator\\Nrt\\PrimaryNode.cs:line 126\r\n   
+     * at Lucene.Net.Tests.Replicator.Nrt.SimplePrimaryNode..ctor(Random random, String indexPath, Int32 id, Int32 tcpPort, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, Boolean doFlipBitsDuringCopy, Boolean doCheckIndexOnClose) 
+     * in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\Nrt\\SimplePrimaryNode.cs:line 98\r\n  
+     * at Lucene.Net.Tests.Replicator.Nrt.SimpleServer.Test() in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\Nrt\\SimpleServer.cs:line 259\r\n   
+     * at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)\r\n  
+     * at System.Reflection.MethodInvoker.Invoke(Object obj, IntPtr* args, BindingFlags invokeAttr)\r\n--KeyNotFoundException\r\n   
+     * at System.Collections.Generic.Dictionary`2.get_Item(TKey key)\r\n   at Lucene.Net.Replicator.Nrt.PrimaryNode..ctor(IndexWriter writer, Int32 id, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, TextWriter printStream) 
+     * in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Replicator\\Nrt\\PrimaryNode.cs:line 88\r\n  Standard Output Messages:\r\n RandomSeed: 0xda6967b17112454b\r\n Culture: mgh-MZ\r\n Time Zone: (UTC-09:00) Coordinated Universal Time-09\r\n 
+     * Default Codec: CheapBastard (CheapBastardCodec)\r\n Default Similarity: DefaultSimilarity\r\n Nightly: False\r\n Weekly: False\r\n Slow: True\r\n Awaits Fix: False\r\n Directory: random\r\n Verbose: True\r\n Random Multiplier: 1\r\n \r\n PORT: 0\r\n %5.3fs %5.1fs:         
+     * N%d [%11s] %s\r\n IFD 1 [29/11/2023 17:26:17; NonParallelWorker]: init: current segments file is \"\"; deletionPolicy=Lucene.Net.Index.KeepOnlyLastCommitDeletionPolicy\r\n IFD 1 [29/11/2023 17:26:17; NonParallelWorker]: now checkpoint \"\" [0 segments ; isCommit = False]\r\n IFD 1 [29/11/2023 17:26:17; NonParallelWorker]: 1 msec to checkpoint\r\n IW 1 [29/11/2023 17:26:17; NonParallelWorker]: init: create=True\r\n IW 1 [29/11/2023 17:26:17; NonParallelWorker]: \r\n 
+     * dir=MockDirectoryWrapper(NIOFSDirectory@C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-og1h4m4n lockFactory=NativeFSLockFactory@C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-og1h4m4n)\r\n index=\r\n version=4.8.0\r\n
+     * matchVersion=LUCENE_48\r\n analyzer=MockAnalyzer\r\n ramBufferSizeMB=16\r\n maxBufferedDocs=719\r\n maxBufferedDeleteTerms=-1\r\n mergedSegmentWarmer=\r\n readerTermsIndexDivisor=4\r\n termIndexInterval=81\r\n delPolicy=KeepOnlyLastCommitDeletionPolicy\r\n commit=null\r\n 
+     * openMode=CREATE_OR_APPEND\r\n similarity=DefaultSimilarity\r\n mergeScheduler=Lucene.Net.Index.SerialMergeScheduler\r\n default WRITE_LOCK_TIMEOUT=1000\r\n writeLockTimeout=1000\r\n codec=CheapBastard\r\n infoStream=ThreadNameFixingPrintStreamInfoStream\r\n
+     * mergePolicy=[LogByteSizeMergePolicy: minMergeSize=1677721, mergeFactor=3, maxMergeSize=2147483648, maxMergeSizeForForcedMerge=9223372036854775807, calibrateSizeByDeletes=False, maxMergeDocs=2147483647, maxCFSSegmentSizeMB=8796093022207,999, noCFSRatio=0]\r\n 
+     * indexerThreadPool=Lucene.Net.Index.DocumentsWriterPerThreadPool\r\n readerPooling=False\r\n perThreadHardLimitMB=1945\r\n useCompoundFile=False\r\n checkIntegrityAtMerge=False\r\n 
+     * \r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n   
+     * at System.Collections.Generic.Dictionary`2.get_Item(TKey key)\r\n   
+     * at Lucene.Net.Replicator.Nrt.PrimaryNode..ctor(IndexWriter writer, Int32 id, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, TextWriter printStream) in 
+     * C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Replicator\\Nrt\\PrimaryNode.cs:line 88\r\n\r\n\r\nTotal tests: 1\r\n    
+     * Failed: 1\r\n Total time: 1.8456 Seconds\r\n"
+     * 
+     * "Microsoft (R) Test Execution Command Line Tool Version 17.4.0 (x64)\r\nCopyright (c) Microsoft Corporation.  All rights reserved.\r\n\r\nStarting test execution, please wait...\r\nA total of 1 test files matched the specified pattern.\r\nNUnit Adapter 3.17.0.0: Test execution started\r\nRunning all tests in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\bin\\Debug\\net7.0\\Lucene.Net.Tests.Replicator.dll\r\n   NUnit3TestExecutor discovered 68 of 68 NUnit test cases\r\nRandomSeed: 0x26cf1b4cef7d5c27\r\nCulture: sq-AL\r\nTime Zone: (UTC+02:00) Harare, Pretoria\r\nDefault Codec: Lucene46 (RandomCodec)\r\nDefault Similarity: DefaultSimilarity\r\nNightly: False\r\nWeekly: False\r\nSlow: True\r\nAwaits Fix: False\r\nDirectory: random\r\nVerbose: True\r\nRandom Multiplier: 1\r\n\r\nPORT: 0\r\n%5.3fs %5.1fs:         N%d [%11s] %s\r\nIFD 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: init: current segments file is \"\"; deletionPolicy=Lucene.Net.Index.KeepOnlyLastCommitDeletionPolicy\r\nIFD 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: now checkpoint \"\" [0 segments ; isCommit = False]\r\nIFD 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: 1 msec to checkpoint\r\nIW 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: init: create=True\r\nIW 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: \r\ndir=MockDirectoryWrapper(MMapDirectory@C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-iqfzvfc2 lockFactory=NativeFSLockFactory@C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-iqfzvfc2)\r\nindex=\r\nversion=4.8.0\r\nmatchVersion=LUCENE_48\r\nanalyzer=MockAnalyzer\r\nramBufferSizeMB=16\r\nmaxBufferedDocs=-1\r\nmaxBufferedDeleteTerms=-1\r\nmergedSegmentWarmer=\r\nreaderTermsIndexDivisor=2\r\ntermIndexInterval=32\r\ndelPolicy=KeepOnlyLastCommitDeletionPolicy\r\ncommit=null\r\nopenMode=CREATE_OR_APPEND\r\nsimilarity=DefaultSimilarity\r\nmergeScheduler=ConcurrentMergeScheduler: maxThreadCount=1, maxMergeCount=2, mergeThreadPriority=-1\r\ndefault WRITE_LOCK_TIMEOUT=1000\r\nwriteLockTimeout=1000\r\ncodec=Lucene46: {}, docValues:{}\r\ninfoStream=ThreadNameFixingPrintStreamInfoStream\r\nmergePolicy=[TieredMergePolicy: maxMergeAtOnce=3, maxMergeAtOnceExplicit=13, maxMergedSegmentMB=56,92578125, floorSegmentMB=1,4658203125, forceMergeDeletesPctAllowed=3,1933459826266697, segmentsPerTier=3, maxCFSSegmentSizeMB=8796093022207,999, noCFSRatio=0,858049558093831\r\nindexerThreadPool=Lucene.Net.Index.DocumentsWriterPerThreadPool\r\nreaderPooling=True\r\nperThreadHardLimitMB=1945\r\nuseCompoundFile=False\r\ncheckIntegrityAtMerge=True\r\n\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n%5.3fs %5.1fs: %7s %2s [%11s] %s\r\n   at System.Collections.Generic.Dictionary`2.TryInsert(TKey key, TValue value, InsertionBehavior behavior)\r\n   at System.Collections.Generic.Dictionary`2.Add(TKey key, TValue value)\r\n  
+     * at Lucene.Net.Replicator.Nrt.PrimaryNode..ctor(IndexWriter writer, Int32 id, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, TextWriter printStream) 
+     * in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Replicator\\Nrt\\PrimaryNode.cs:line 90\r\nWARNING: Leftover undeleted temporary files Could not remove the following files (in the order of attempts):\r\n  
+     * C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-iqfzvfc2\\write.lock\r\n   
+     * C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-iqfzvfc2\r\n\r\nNUnit Adapter 3.17.0.0: 
+     * Test execution complete\r\n  Failed Test [400 ms]\r\n  Error Message:\r\n  
+     * Lucene.Net.Util.LuceneSystemException : An item with the same key has already been added. Key: __version\r\n  ----> System.ArgumentException : An item with the same key has already been added. Key: __version\r\n\r\nTo reproduce this test result:\r\n\r\nOption 1:\r\n\r\n Apply the following assembly-level attributes:\r\n\r\n[assembly: Lucene.Net.Util.RandomSeed(\"0x26cf1b4cef7d5c27\")]\r\n[assembly: NUnit.Framework.SetCulture(\"sq-AL\")]\r\n\r\nOption 2:\r\n\r\n Use the following .runsettings file:\r\n\r\n<RunSettings>\r\n  <TestRunParameters>\r\n    <Parameter name=\"tests:seed\" value=\"0x26cf1b4cef7d5c27\" />\r\n    <Parameter name=\"tests:culture\" value=\"sq-AL\" />\r\n  </TestRunParameters>\r\n</RunSettings>\r\n\r\nSee the .runsettings documentation at: https://docs.microsoft.com/en-us/visualstudio/test/configure-unit-tests-by-using-a-dot-runsettings-file.\r\n  Stack Trace:\r\n     at Lucene.Net.Replicator.Nrt.PrimaryNode..ctor(IndexWriter writer, Int32 id, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, TextWriter printStream) in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Replicator\\Nrt\\PrimaryNode.cs:line 126\r\n   at Lucene.Net.Tests.Replicator.Nrt.SimplePrimaryNode..ctor(Random random, String indexPath, Int32 id, Int32 tcpPort, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, Boolean doFlipBitsDuringCopy, Boolean doCheckIndexOnClose) in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\Nrt\\SimplePrimaryNode.cs:line 98\r\n   at Lucene.Net.Tests.Replicator.Nrt.SimpleServer.Test() in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\Nrt\\SimpleServer.cs:line 259\r\n   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)\r\n   at System.Reflection.MethodInvoker.Invoke(Object obj, IntPtr* args, BindingFlags invokeAttr)\r\n--ArgumentException\r\n   at System.Collections.Generic.Dictionary`2.TryInsert(TKey key, TValue value, InsertionBehavior behavior)\r\n   at System.Collections.Generic.Dictionary`2.Add(TKey key, TValue value)\r\n   at Lucene.Net.Replicator.Nrt.PrimaryNode..ctor(IndexWriter writer, Int32 id, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, TextWriter printStream) in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Replicator\\Nrt\\PrimaryNode.cs:line 90\r\n  Standard Output Messages:\r\n RandomSeed: 0x26cf1b4cef7d5c27\r\n Culture: sq-AL\r\n Time Zone: (UTC+02:00) Harare, Pretoria\r\n Default Codec: Lucene46 (RandomCodec)\r\n Default Similarity: DefaultSimilarity\r\n Nightly: False\r\n Weekly: False\r\n Slow: True\r\n Awaits Fix: False\r\n Directory: random\r\n Verbose: True\r\n Random Multiplier: 1\r\n \r\n PORT: 0\r\n %5.3fs %5.1fs:         N%d [%11s] %s\r\n IFD 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: init: current segments file is \"\"; deletionPolicy=Lucene.Net.Index.KeepOnlyLastCommitDeletionPolicy\r\n IFD 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: now checkpoint \"\" [0 segments ; isCommit = False]\r\n IFD 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: 1 msec to checkpoint\r\n IW 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: init: create=True\r\n IW 1 [1.12.2023 3:30:44 e pasdites; NonParallelWorker]: \r\n dir=MockDirectoryWrapper(MMapDirectory@C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-iqfzvfc2 lockFactory=NativeFSLockFactory@C:\\Users\\admin\\AppData\\Local\\Temp\\LuceneTemp-iqfzvfc2)\r\n index=\r\n version=4.8.0\r\n matchVersion=LUCENE_48\r\n analyzer=MockAnalyzer\r\n ramBufferSizeMB=16\r\n maxBufferedDocs=-1\r\n maxBufferedDeleteTerms=-1\r\n mergedSegmentWarmer=\r\n readerTermsIndexDivisor=2\r\n termIndexInterval=32\r\n delPolicy=KeepOnlyLastCommitDeletionPolicy\r\n commit=null\r\n openMode=CREATE_OR_APPEND\r\n similarity=DefaultSimilarity\r\n mergeScheduler=ConcurrentMergeScheduler: maxThreadCount=1, maxMergeCount=2, mergeThreadPriority=-1\r\n default WRITE_LOCK_TIMEOUT=1000\r\n writeLockTimeout=1000\r\n codec=Lucene46: {}, docValues:{}\r\n infoStream=ThreadNameFixingPrintStreamInfoStream\r\n mergePolicy=[TieredMergePolicy: maxMergeAtOnce=3, maxMergeAtOnceExplicit=13, maxMergedSegmentMB=56,92578125, floorSegmentMB=1,4658203125, forceMergeDeletesPctAllowed=3,1933459826266697, segmentsPerTier=3, maxCFSSegmentSizeMB=8796093022207,999, noCFSRatio=0,858049558093831\r\n indexerThreadPool=Lucene.Net.Index.DocumentsWriterPerThreadPool\r\n readerPooling=True\r\n perThreadHardLimitMB=1945\r\n useCompoundFile=False\r\n checkIntegrityAtMerge=True\r\n \r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n %5.3fs %5.1fs: %7s %2s [%11s] %s\r\n    at System.Collections.Generic.Dictionary`2.TryInsert(TKey key, TValue value, InsertionBehavior behavior)\r\n    at System.Collections.Generic.Dictionary`2.Add(TKey key, TValue value)\r\n    at Lucene.Net.Replicator.Nrt.PrimaryNode..ctor(IndexWriter writer, Int32 id, Int64 primaryGen, Int64 forcePrimaryVersion, SearcherFactory searcherFactory, TextWriter printStream) in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Replicator\\Nrt\\PrimaryNode.cs:line 90\r\n\r\n\r\nTotal tests: 1\r\n     Failed: 1\r\n Total time: 1.6639 Seconds\r\n"
+     * 
+     * 
+     * "Microsoft (R) Test Execution Command Line Tool Version 17.4.0 (x64)\r\nCopyright (c) Microsoft Corporation.  All rights reserved.\r\n\r\nStarting test execution, please wait...\r\nA total of 1 test files matched the specified pattern.\r\nNUnit Adapter 3.17.0.0: Test execution started\r\nRunning all tests in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\bin\\Debug\\net7.0\\Lucene.Net.Tests.Replicator.dll\r\n   NUnit3TestExecutor discovered 68 of 68 NUnit test cases\r\nRandomSeed: 0xb3ef85f835cbbf38\r\nCulture: ar-BH\r\nTime Zone: (UTC+03:00) Moscow, St. Petersburg\r\nDefault Codec: CheapBastard (CheapBastardCodec)\r\nDefault Similarity: DefaultSimilarity\r\nNightly: False\r\nWeekly: False\r\nSlow: True\r\nAwaits Fix: False\r\nDirectory: random\r\nVerbose: True\r\nRandom Multiplier: 1\r\n\r\nNUnit Adapter 3.17.0.0: Test execution complete\r\n  Failed Test [169 ms]\r\n  Error Message:\r\n   System.FormatException : The input string '-1' was not in a correct format.\r\n\r\nTo reproduce this test result:\r\n\r\nOption 1:\r\n\r\n Apply the following assembly-level attributes:\r\n\r\n[assembly: Lucene.Net.Util.RandomSeed(\"0xb3ef85f835cbbf38\")]\r\n[assembly: NUnit.Framework.SetCulture(\"ar-BH\")]\r\n\r\nOption 2:\r\n\r\n Use the following .runsettings file:\r\n\r\n<RunSettings>\r\n  <TestRunParameters>\r\n    <Parameter name=\"tests:seed\" value=\"0xb3ef85f835cbbf38\" />\r\n    <Parameter name=\"tests:culture\" value=\"ar-BH\" />\r\n  </TestRunParameters>\r\n</RunSettings>\r\n\r\nSee the .runsettings documentation at: https://docs.microsoft.com/en-us/visualstudio/test/configure-unit-tests-by-using-a-dot-runsettings-file.\r\n  Stack Trace:\r\n     at System.Number.ThrowOverflowOrFormatException(ParsingStatus status, ReadOnlySpan`1 value, TypeCode type)\r\n   at System.Int64.Parse(String s)\r\n   at Lucene.Net.Tests.Replicator.Nrt.SimpleServer.Test() in C:\\Users\\admin\\Projects\\Dotnet\\lucenenet\\src\\Lucene.Net.Tests.Replicator\\Nrt\\SimpleServer.cs:line 241\r\n   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)\r\n   at System.Reflection.MethodInvoker.Invoke(Object obj, IntPtr* args, BindingFlags invokeAttr)\r\n  Standard Output Messages:\r\n RandomSeed: 0xb3ef85f835cbbf38\r\n Culture: ar-BH\r\n Time Zone: (UTC+03:00) Moscow, St. Petersburg\r\n Default Codec: CheapBastard (CheapBastardCodec)\r\n Default Similarity: DefaultSimilarity\r\n Nightly: False\r\n Weekly: False\r\n Slow: True\r\n Awaits Fix: False\r\n Directory: random\r\n Verbose: True\r\n Random Multiplier: 1\r\n\r\n\r\n\r\nTotal tests: 1\r\n     Failed: 1\r\n Total time: 1.3479 Seconds\r\n"
+     */
     // MockRandom's .sd file has no index header/footer:
     /*    @SuppressCodecs({ "MockRandom", "Memory", "Direct", "SimpleText"})
     @SuppressSysoutChecks(bugUrl = "Stuff gets printed, important stuff for debugging a failure")*/
@@ -58,7 +90,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             List<string> cmd = new List<string>();
 
             //get the full location of the assembly with DaoTests in it
-            string testAssemblyPath = Assembly.GetAssembly(typeof(TestNRTReplication)).Location;
+            string testAssemblyPath = Assembly.GetAssembly(typeof(SimpleServer)).Location;
 
             //get the folder that's in
             string theDirectory = Path.GetDirectoryName(testAssemblyPath);
@@ -67,7 +99,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             {
                     "test", testAssemblyPath,
                     "--framework", GetTargetFramework(),
-                    "--filter", nameof(TestNRTReplication),
+                    "--filter", "FullyQualifiedName~" + typeof(SimpleServer).FullName,
                     "--logger:\"console;verbosity=normal\"",
                     "--",
                     $"RunConfiguration.TargetPlatform={GetTargetPlatform()}"
@@ -76,17 +108,23 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             // LUCENENET NOTE: Since in our CI environment we create a lucene.testSettings.config file
             // for all tests, we need to pass some of these settings as test run parameters to override
             // for this process. These are read as system properties on the inside of the application.
-            cmd.Add(TestRunParameter("assert", "true"));
+            //cmd.Add(TestRunParameter("assert", "true"));
+            ConfigurationSettings.CurrentConfiguration["assert"] = "true";
+            /*StringDictionary stringDictionary = new StringDictionary();
+            stringDictionary.Add("assert", "true");*/
             // Mixin our own counter because this is called from a fresh thread which means the seed otherwise isn't changing each time we spawn a
             // new node:
             long seed = Random.NextInt64() * nodeStartCounter.IncrementAndGet();
-            cmd.Add(TestRunParameter("tests:seed", SeedUtils.FormatSeed(seed)));
-            cmd.Add(TestRunParameter("tests:culture", Thread.CurrentThread.CurrentCulture.Name));
+            //cmd.Add(TestRunParameter("tests:seed", SeedUtils.FormatSeed(seed)));
+            ConfigurationSettings.CurrentConfiguration["tests:seed"] = SeedUtils.FormatSeed(seed);
+            //cmd.Add($"-d:tests:culture={Thread.CurrentThread.CurrentCulture.Name}");
+            ConfigurationSettings.CurrentConfiguration["tests:culture"] = Thread.CurrentThread.CurrentCulture.Name;
             long myPrimaryGen;
             if (primaryTCPPort != -1)
             {
                 // I am a replica
-                cmd.Add(TestRunParameter("tests:nrtreplication.primaryTCPPort", primaryTCPPort.ToString()));
+                //cmd.Add($"-d:tests:nrtreplication.primaryTCPPort={primaryTCPPort}");
+                ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.primaryTCPPort"] = primaryTCPPort.toString();
                 myPrimaryGen = lastPrimaryGen;
             }
             else
@@ -94,25 +132,41 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 myPrimaryGen = nextPrimaryGen++;
                 lastPrimaryGen = myPrimaryGen;
             }
-            cmd.Add(TestRunParameter("tests:nrtreplication.primaryGen", myPrimaryGen.ToString()));
-            cmd.Add(TestRunParameter("tests:nrtreplication.closeorcrash", "false"));
+            //cmd.Add(TestRunParameter("tests:nrtreplication.primaryGen", myPrimaryGen.ToString()));
+            ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.primaryGen"] = myPrimaryGen.ToString();
+            //cmd.Add(TestRunParameter("tests:nrtreplication.closeorcrash", "false"));
+            ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.closeorcrash"] = "false";
 
-            cmd.Add(TestRunParameter("tests:nrtreplication.node", "true"));
-            cmd.Add(TestRunParameter("tests:nrtreplication.nodeid", id.ToString()));
-            cmd.Add(TestRunParameter("tests:nrtreplication.startNS", Node.globalStartNS.ToString()));
-            cmd.Add(TestRunParameter("tests:nrtreplication.indexpath", indexPath.FullName));
-            cmd.Add(TestRunParameter("tests:nrtreplication.checkonclose", "true"));
+            //cmd.Add(TestRunParameter("tests:nrtreplication.node", "true"));
+            ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.node"] = "true";
+
+            //cmd.Add(TestRunParameter("tests:nrtreplication.nodeid", id.ToString()));
+            ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.nodeid"] = id.ToString();
+
+            //cmd.Add(TestRunParameter("tests:nrtreplication.startNS", Node.globalStartNS.ToString()));
+            ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.startNS"] = Node.globalStartNS.ToString();
+
+            //cmd.Add(TestRunParameter("tests:nrtreplication.indexpath", indexPath.FullName));
+            ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.indexpath"] = indexPath.FullName;
+
+            //cmd.Add(TestRunParameter("tests:nrtreplication.checkonclose", "true"));
+            ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.checkonclose"] = "true";
+
 
             if (primaryTCPPort == -1)
             {
                 // We are the primary node
-                cmd.Add(TestRunParameter("tests:nrtreplication.isPrimary", "true"));
-                cmd.Add(TestRunParameter("tests:nrtreplication.forcePrimaryVersion", forcePrimaryVersion.ToString()));
-            }
+                //cmd.Add(TestRunParameter("tests:nrtreplication.isPrimary", "true"));
+                ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.isPrimary"] = "true";
 
+                //cmd.Add(TestRunParameter("tests:nrtreplication.forcePrimaryVersion", forcePrimaryVersion.ToString()));
+                ConfigurationSettings.CurrentConfiguration["tests:nrtreplication.forcePrimaryVersion"] = J2N.Numerics.Int64.ToString(forcePrimaryVersion);
+
+            }
+            Assert.AreEqual(id, int.Parse(SystemProperties.GetProperty("tests:nrtreplication.nodeid")));
             // passing NIGHTLY to this test makes it run for much longer, easier to catch it in the act...
-            cmd.Add(TestRunParameter("tests:nightly", "true"));
-            cmd.Add(typeof(TestNRTReplication).FullName.Replace(typeof(TestNRTReplication).Name, "SimpleServer"));
+            //cmd.Add(TestRunParameter("tests:nightly", "true"));
+            //cmd.Add(typeof(TestNRTReplication).FullName.Replace(typeof(TestNRTReplication).Name, "SimpleServer"));
             /* cmd.Add("-ea");
              cmd.Add("-cp");
              cmd.Add(SystemProperties.GetProperty("java.class.var"));
@@ -128,17 +182,37 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
+                EnvironmentVariables =
+                {
+                    {"tests:nrtreplication.primaryTCPPort",primaryTCPPort.toString() },
+                    { "tests:nrtreplication.node","true"},
+                    { "tests:nrtreplication.nodeid", id.ToString() },
+                    {"tests:nrtreplication.primaryGen", myPrimaryGen.ToString() },
+                    {"tests:nrtreplication.closeorcrash", "true" },
+                    {"tests:nrtreplication.startNS", Node.globalStartNS.ToString() },
+                    {"tests:nrtreplication.indexpath", indexPath.FullName },
+                    {"tests:nrtreplication.checkonclose", "true" },
+                    {"tests:nrtreplication.isPrimary", "true" },
+                    {"tests:nrtreplication.forcePrimaryVersion", forcePrimaryVersion.ToString() }
+                }
             };
+
+            /* var cli = Cli.Wrap("dotnet")
+                 .WithArguments(string.Join(" ", cmd))
+                 .WithWorkingDirectory(theDirectory);*/
+
 
             Message("child process command: " + cmd);
 
             Process p = Process.Start(startInfo);
-
-            TextReader r;
+            //var result = cli.ExecuteBufferedAsync().GetAwaiter().GetResult();
+            StreamReader r;
             try
             {
-                r = IOUtils.GetDecodingReader(p.StandardError.BaseStream, Encoding.UTF8);
+                r = p.StandardOutput;
                 cmd.Clear();
+                cmd.Add(r.ReadToEnd());
+                cmd.Add(p.StandardError.ReadToEnd());
                 cmd.Add(SystemProperties.GetProperty("tests:nrtreplication.primaryGen"));
             }
             catch (UnsupportedOperationException uee)
@@ -156,7 +230,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             {
                 string l = r.ReadLine();
                 cmd.Clear();
-                cmd.Add(l);
+                cmd.Add(r.ReadToEnd());
                 if (l == null)
                 {
                     Message("top: node=" + id + " failed to start");
@@ -213,7 +287,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
             // Baby sits the child process, pulling its stdout and printing to our stdout:
             AtomicBoolean nodeClosing = new AtomicBoolean();
-            ThreadJob pumper = ThreadPumper.Start(new ThreadJobAnonymousClass(p, finalWillCrash, id), r, Console.Out, null, nodeClosing);
+            ThreadJob pumper = ThreadPumper.Start(new ThreadJobAnonymousClass(p, finalWillCrash, id), null, Console.Out, null, nodeClosing);
 
             pumper.Name = ("pump" + id);
 

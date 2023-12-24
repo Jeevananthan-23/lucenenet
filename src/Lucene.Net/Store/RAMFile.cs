@@ -94,16 +94,19 @@ namespace Lucene.Net.Store
             return buffer;
         }
 
-        protected internal byte[] GetBuffer(int index) // LUCENENET TODO: API - change to indexer property
+        protected internal byte[] this[int index]
         {
-            UninterruptableMonitor.Enter(this);
-            try
+            get
             {
-                return m_buffers[index];
-            }
-            finally
-            {
-                UninterruptableMonitor.Exit(this);
+                UninterruptableMonitor.Enter(this);
+                try
+                {
+                    return m_buffers[index];
+                }
+                finally
+                {
+                    UninterruptableMonitor.Exit(this);
+                }
             }
         }
 

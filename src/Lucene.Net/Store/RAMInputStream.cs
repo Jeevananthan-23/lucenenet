@@ -111,7 +111,7 @@ namespace Lucene.Net.Store
             }
             else
             {
-                currentBuffer = file.GetBuffer(currentBufferIndex);
+                currentBuffer = file[currentBufferIndex];
                 bufferPosition = 0;
                 long buflen = length - bufferStart;
                 bufferLength = buflen > BUFFER_SIZE ? BUFFER_SIZE : (int)buflen;

@@ -46,7 +46,7 @@ namespace Lucene.Net.Replicator.Nrt
         public static string PRIMARY_GEN_KEY = "__primaryGen";
 
         /** Key to store the version in the commit data, which increments every time we open a new NRT reader */
-        public static string VERSION_KEY = "__version";
+        public static string VERSION_ID = "__version";
 
         /** Compact ordinal for this node */
         protected readonly int id;
@@ -99,8 +99,8 @@ namespace Lucene.Net.Replicator.Nrt
                 printStream.WriteLine(
                     string.Format(
                         "%5.3fs %5.1fs:           [%11s] %s",
-                        (now - globalStartNS) / (double)Extensions.TimeUnitSecondsToNanos(1),
-                        (now - localStartNS) / (double)Extensions.TimeUnitSecondsToNanos(1),
+                        (now - globalStartNS) / (double)Time.MillisecondsPerNanosecond,
+                        (now - localStartNS) / (double)Time.MillisecondsPerNanosecond,
                         Thread.CurrentThread.Name,
                         message));
             }
@@ -114,8 +114,8 @@ namespace Lucene.Net.Replicator.Nrt
                 printStream.WriteLine(
                     string.Format(
                         "%5.3fs %5.1fs:         N%d [%11s] %s",
-                        (now - globalStartNS) / (double)Extensions.TimeUnitSecondsToNanos(1),
-                        (now - localStartNS) / (double)Extensions.TimeUnitSecondsToNanos(1),
+                        (now - globalStartNS) / (double)Time.MillisecondsPerNanosecond,
+                        (now - localStartNS) / (double)Time.MillisecondsPerNanosecond,
                         id,
                         Thread.CurrentThread.Name,
                         message));
@@ -130,8 +130,8 @@ namespace Lucene.Net.Replicator.Nrt
                 printStream.WriteLine(
                     string.Format(
                         "%5.3fs %5.1fs: %7s %2s [%11s] %s",
-                        (now - globalStartNS) / (double)Extensions.TimeUnitSecondsToNanos(1),
-                        (now - localStartNS) / (double)Extensions.TimeUnitSecondsToNanos(1),
+                        (now - globalStartNS) / (double)Time.MillisecondsPerNanosecond,
+                        (now - localStartNS) / (double)Time.MillisecondsPerNanosecond,
                         state,
                         Name(),
                          Thread.CurrentThread.Name,

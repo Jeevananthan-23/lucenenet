@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Lucene.Net.Tests.Replicator.Nrt
@@ -54,7 +55,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
                     //node.message("using stream buffer size=" + bufferSize);
                     var @is = new NetworkStream(socket);
                     DataInput @in = new InputStreamDataInput(@is);
-                    BufferedStream bos = new BufferedStream(new NetworkStream(socket), bufferSize);
+                    var bos = new BufferedStream(new NetworkStream(socket), bufferSize);
                     DataOutput @out = new OutputStreamDataOutput(bos);
 
                     if (node is SimplePrimaryNode)
@@ -223,34 +224,34 @@ namespace Lucene.Net.Tests.Replicator.Nrt
         [Test]
         public void Test()
         {
-            int id = int.Parse(SystemProperties.GetProperty("tests:nrtreplication.nodeid"));
+            int id = int.Parse(Environment.GetEnvironmentVariable("tests:nrtreplication.nodeid"));
             ThreadJob.CurrentThread.Name = ("main child " + id);
-            string indexPath = Path.GetDirectoryName(SystemProperties.GetProperty("tests:nrtreplication.indexpath"));
-            bool isPrimary = SystemProperties.GetProperty("tests:nrtreplication.isPrimary") != null;
+            string indexPath = Path.GetDirectoryName(Environment.GetEnvironmentVariable("tests:nrtreplication.indexpath"));
+            bool isPrimary = Environment.GetEnvironmentVariable("tests:nrtreplication.isPrimary") != null;
             int primaryTCPPort;
             long forcePrimaryVersion;
             if (isPrimary == false)
             {
                 forcePrimaryVersion = -1;
-                primaryTCPPort = int.Parse(SystemProperties.GetProperty("tests:nrtreplication.primaryTCPPort"));
+                primaryTCPPort = int.Parse(Environment.GetEnvironmentVariable("tests:nrtreplication.primaryTCPPort"));
             }
             else
             {
                 primaryTCPPort = -1;
-                forcePrimaryVersion = long.Parse(SystemProperties.GetProperty("tests:nrtreplication.forcePrimaryVersion"));
+                forcePrimaryVersion = long.Parse(Environment.GetEnvironmentVariable("tests:nrtreplication.forcePrimaryVersion"));
             }
-            long primaryGen = long.Parse(SystemProperties.GetProperty("tests:nrtreplication.primaryGen"));
-            Node.globalStartNS = long.Parse(SystemProperties.GetProperty("tests:nrtreplication.startNS"));
+            long primaryGen = long.Parse(Environment.GetEnvironmentVariable("tests:nrtreplication.primaryGen"));
+            Node.globalStartNS = long.Parse(Environment.GetEnvironmentVariable("tests:nrtreplication.startNS"));
 
-            bool doRandomCrash = "true".equals(SystemProperties.GetProperty("tests:nrtreplication.doRandomCrash"));
-            bool doRandomClose = "true".equals(SystemProperties.GetProperty("tests:nrtreplication.doRandomClose"));
-            bool doFlipBitsDuringCopy = "true".equals(SystemProperties.GetProperty("tests:nrtreplication.doFlipBitsDuringCopy"));
-            bool doCheckIndexOnClose = "true".equals(SystemProperties.GetProperty("tests:nrtreplication.checkonclose"));
+            bool doRandomCrash = "true".equals(Environment.GetEnvironmentVariable("tests:nrtreplication.doRandomCrash"));
+            bool doRandomClose = "true".equals(Environment.GetEnvironmentVariable("tests:nrtreplication.doRandomClose"));
+            bool doFlipBitsDuringCopy = "true".equals(Environment.GetEnvironmentVariable("tests:nrtreplication.doFlipBitsDuringCopy"));
+            bool doCheckIndexOnClose = "true".equals(Environment.GetEnvironmentVariable("tests:nrtreplication.checkonclose"));
 
             // Create server socket that we listen for incoming requests on:
-            TcpListener ss = new(System.Net.IPAddress.Any, 80);
+            TcpListener ss = new(System.Net.IPAddress.Loopback,0);
             //TODO this is not tested yet and many changes have to be done
-            int tcpPort = 80;
+            int tcpPort = ((IPEndPoint)ss.LocalEndpoint).Port;
             Console.Out.WriteLine("\nPORT: " + tcpPort);
             Node node;
             if (isPrimary)

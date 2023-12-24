@@ -98,7 +98,7 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             : base(InitWriter(id, random, indexPath, doCheckIndexOnClose), id, primaryGen, forcePrimaryVersion, searcherFactory, Console.Out)
         {
             this.tcpPort = tcpPort;
-            this.random = new Random((int)random.nextLong());
+            this.random = new Random(random.nextInt());
             this.doFlipBitsDuringCopy = doFlipBitsDuringCopy;
         }
 
@@ -125,10 +125,10 @@ namespace Lucene.Net.Tests.Replicator.Nrt
 
             MockAnalyzer analyzer = new MockAnalyzer(random);
             analyzer.MaxTokenLength = TestUtil.NextInt32(random, 1, IndexWriter.MAX_TERM_LENGTH);
-            IndexWriterConfig iwc = LuceneTestCase.NewIndexWriterConfig(LuceneVersion.LUCENE_48, analyzer);
+            IndexWriterConfig iwc = LuceneTestCase.NewIndexWriterConfig(random, LuceneVersion.LUCENE_48, analyzer);
 
             MergePolicy mp = iwc.MergePolicy;
-            //iwc.setInfoStream(new PrintStreamInfoStream(System.@out));
+            //iwc.SetInfoStream(new TextWriterInfoStream(Console.Out));
 
             // Force more frequent merging so we stress merge warming:
             if (mp is TieredMergePolicy)
@@ -144,7 +144,6 @@ namespace Lucene.Net.Tests.Replicator.Nrt
             }
 
             IndexWriter writer = new IndexWriter(dir, iwc);
-
             TestUtil.ReduceOpenFiles(writer);
             return writer;
         }

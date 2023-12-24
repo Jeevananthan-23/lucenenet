@@ -68,6 +68,7 @@ namespace Lucene.Net.Index
                     // Note this is the vstest.console process we are tracking here.
                     Process p = ForkTest(tempDir.FullName, tempProcessToKillFile.FullName);
 
+                    string processIdToKillFile = SystemProperties.GetProperty("tests:tempProcessToKillFile");
                     TextWriter childOut = BeginOutput(p, out ThreadJob stdOutPumper, out ThreadJob stdErrPumper);
 
                     // LUCENENET: Note that ForkTest() creates the vstest.console.exe process.

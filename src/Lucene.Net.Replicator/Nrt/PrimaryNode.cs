@@ -83,16 +83,16 @@ namespace Lucene.Net.Replicator.Nrt
                 Message("commitData: " + writer.CommitData);
 
                 // Record our primaryGen in the userData, and set initial version to 0:
-                IDictionary<string, string> commitData = new Dictionary<string, string>(writer.CommitData);
+                var commitData = new JCG.Dictionary<string, string>(writer.CommitData);
                 commitData.Add(PRIMARY_GEN_KEY, Int64.ToString(primaryGen));
-                if (commitData[VERSION_KEY] == null)
+                if (commitData[VERSION_ID] == null)
                 {
-                    commitData.Add(VERSION_KEY, "0");
+                    commitData.Add(VERSION_ID, "0");
                     Message("add initial commitData version=0");
                 }
                 else
                 {
-                    Message("keep current commitData version=" + commitData[VERSION_KEY]);
+                    Message("keep current commitData version=" + commitData[VERSION_ID]);
                 }
                 writer.SetCommitData(commitData);
 
@@ -176,7 +176,7 @@ namespace Lucene.Net.Replicator.Nrt
             UninterruptableMonitor.Enter(this);
             try
             {
-                string s = curInfos.UserData[VERSION_KEY];
+                string s = curInfos.UserData[VERSION_ID];
                 // In ctor we always install an initial version:
                 if (Debugging.AssertsEnabled)
                 {
@@ -198,7 +198,7 @@ namespace Lucene.Net.Replicator.Nrt
             commitData.Add(PRIMARY_GEN_KEY, Int64.ToString(primaryGen));
             // TODO (opto): it's a bit wasteful that we put "last refresh" version here, not the actual version we are committing, because it means
             // on xlog replay we are replaying more ops than necessary.
-            commitData.Add(VERSION_KEY, Int64.ToString(copyState.version));
+            commitData.Add(VERSION_ID, Int64.ToString(copyState.version));
             Message("top: commit commitData=" + commitData);
             writer.SetCommitData(commitData);
             writer.Commit();

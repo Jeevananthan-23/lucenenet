@@ -76,7 +76,7 @@ namespace Lucene.Net.Store
                 {
                     length = (int)(end - pos);
                 }
-                @out.WriteBytes(file.GetBuffer(buffer++), length);
+                @out.WriteBytes(file[buffer++], length);
                 pos = nextPos;
             }
         }
@@ -100,7 +100,7 @@ namespace Lucene.Net.Store
                 {
                     length = (int)(end - pos);
                 }
-                Arrays.Copy(file.GetBuffer(buffer++), 0, bytes, bytesUpto, length);
+                Arrays.Copy(file[buffer++], 0, bytes, bytesUpto, length);
                 bytesUpto += length;
                 pos = nextPos;
             }
@@ -190,10 +190,10 @@ namespace Lucene.Net.Store
             }
             else
             {
-                currentBuffer = file.GetBuffer(currentBufferIndex);
+                currentBuffer = file[currentBufferIndex];
             }
             bufferPosition = 0;
-            bufferStart = (long)BUFFER_SIZE * (long)currentBufferIndex;
+            bufferStart = BUFFER_SIZE * (long)currentBufferIndex;
             bufferLength = currentBuffer.Length;
         }
 

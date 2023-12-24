@@ -1,4 +1,5 @@
-﻿using Lucene.Net.Index;
+﻿using J2N;
+using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using System;
@@ -16,6 +17,6 @@ namespace Lucene.Net.Replicator.Nrt
 
         internal static void PrintStackTrace(this Exception e, TextWriter destination) => destination.WriteLine(e.StackTrace);
 
-        internal static double TimeUnitSecondsToNanos(int num) => throw new NotImplementedException(); //TimeUnit.SECONDS.toNanos(1)
+        internal static double TimeUnitSecondsToNanos(int num) =>  Time.MillisecondsPerNanosecond;
     }
 }

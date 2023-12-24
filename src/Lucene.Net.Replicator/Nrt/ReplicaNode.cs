@@ -418,7 +418,7 @@ namespace Lucene.Net.Replicator.Nrt
 
                 IDictionary<string, string> commitData = new Dictionary<string, string>();
                 commitData.Add(PRIMARY_GEN_KEY, Int64.ToString(lastPrimaryGen));
-                commitData.Add(VERSION_KEY, Int64.ToString(GetCurrentSearchingVersion()));
+                commitData.Add(VERSION_ID, Int64.ToString(GetCurrentSearchingVersion()));
                 infos.UserData = commitData;
 
                 // write and fsync a new segments_N
